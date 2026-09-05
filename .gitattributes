@@ -1,0 +1,11 @@
+# Preserve upstream license text byte-for-byte, including significant or
+# inherited trailing whitespace, without flagging it as repository prose.
+THIRD_PARTY_NOTICES.md whitespace=-trailing-space
+third-party/licenses/** whitespace=-trailing-space
+
+# Keep public documentation and scripts normalized across platforms.
+*.md text eol=lf
+*.sh text eol=lf
+*.ps1 text eol=crlf
+*.template text eol=lf
+SHA256SUMS text eol=lf

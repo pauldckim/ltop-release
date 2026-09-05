@@ -1,0 +1,73 @@
+# ===========================================================================
+# ltop Homebrew cask — DISABLED TEMPLATE (not a live cask)
+#
+# This file is intentionally named `ltop.rb.template` (not `ltop.rb`) so
+# that Homebrew never loads it. It is future-ready: it carries the real
+# repository URL and artifact naming, but explicit placeholders for the
+# values that do not exist yet.
+#
+# Activation blockers (see ../README.md in this directory):
+#   1. macOS artifacts must be Developer-ID signed AND notarized
+#      (0.1.0 is unsigned; self-signed certificates do NOT satisfy
+#      Gatekeeper/Homebrew requirements).
+#   2. Replace the sha256 placeholders with the real archive checksums.
+#   3. macOS arm64 artifacts must exist (0.1.0 ships x86_64 only).
+#
+# To activate in a tap (e.g. pauldckim/ltop-tap): copy this file to
+# Casks/ltop.rb, fill in the placeholders, and run `brew style` +
+# `brew audit` on the tap.
+# ===========================================================================
+
+cask "ltop" do
+  # PLACEHOLDER: bump to the real release version when activating.
+  version "0.1.0"
+
+  # PLACEHOLDER: real SHA-256 of the GitHub Release archive (per arch).
+  # Must match the release SHA256SUMS exactly.
+  on_macos do
+    arch = Hardware::CPU.architecture
+
+    if arch == :arm64
+      # PLACEHOLDER: ltop-v0.1.0-macos-arm64.zip does not exist yet.
+      url "https://github.com/pauldckim/ltop-release/releases/download/v0.1.0/ltop-v0.1.0-macos-arm64.zip"
+      sha256 "REPLACE_WITH_REAL_SHA256_MACOS_ARM64"
+    else
+      # PLACEHOLDER: fill in once the x86_64 archive is signed + notarized.
+      url "https://github.com/pauldckim/ltop-release/releases/download/v0.1.0/ltop-v0.1.0-macos-x86_64.zip"
+      sha256 "REPLACE_WITH_REAL_SHA256_MACOS_X86_64"
+    end
+
+    # The archive contains a top-level directory with the binary inside.
+    binary "ltop-v0.1.0-macos-#{arch}/ltop"
+  end
+
+  on_linux do
+    # PLACEHOLDER: fill in once verified for the target distro/glibc.
+    url "https://github.com/pauldckim/ltop-release/releases/download/v0.1.0/ltop-v0.1.0-linux-x86_64.tar.gz"
+    sha256 "REPLACE_WITH_REAL_SHA256_LINUX_X86_64"
+    binary "ltop-v0.1.0-linux-x86_64/ltop"
+  end
+
+  name "ltop"
+  desc "Single-binary TUI monitor for llama.cpp llama-server and its local process"
+  homepage "https://github.com/pauldckim/ltop-release"
+
+  livecheck do
+    url "https://github.com/pauldckim/ltop-release/releases/latest"
+    regex(/v?(\d+(?:\.\d+)+)/i)
+  end
+
+  caveats <<~EOT
+    ltop is distributed under a proprietary freeware license (see
+    https://github.com/pauldckim/ltop-release/blob/main/LICENSE.md):
+    free to use and to redistribute unmodified; no sale, no modification,
+    no reverse engineering. The source code is not published.
+
+    The 0.1.0 macOS binary is NOT Developer-ID signed or notarized; this
+    cask template must not be activated until that changes.
+  EOT
+  # No `uninstall` stanza: the `binary` stanza links the executable into
+  # Homebrew's prefix, and Homebrew removes that link automatically on
+  # `brew uninstall --cask ltop`. ltop installs nothing else (no app
+  # bundle, no support files), so there is nothing left to trash.
+end

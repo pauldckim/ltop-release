@@ -1,0 +1,30 @@
+# ltop-release staging — local build/packaging outputs are NOT tracked.
+# Release artifacts (binaries, archives) live only in GitHub Release assets;
+# this repo tracks manifests, docs, screenshots and templates.
+#
+# NOTE: this repository deliberately does NOT use Git LFS.
+
+# Local staging: fetched prebuilt binaries and archive staging trees
+.staging/
+temp/
+
+# Packaged release assets (created by scripts/package-release.sh)
+dist/
+
+# Signing material — never commit certificates, keys or tokens
+*.p12
+*.pfx
+*.cer
+*.crt
+*.pem
+*.key
+*.gpg
+*.asc
+signing/
+secrets/
+*.env
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini

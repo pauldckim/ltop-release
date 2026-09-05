@@ -1,0 +1,97 @@
+# ===========================================================================
+# ltop WinGet manifest — DISABLED TEMPLATE (not submittable as-is)
+#
+# This file is intentionally named `pauldckim.ltop.0.1.0.yaml.template`
+# (not `.yaml`) so that winget tooling and the microsoft/winget-pkgs
+# validation pipeline never pick it up.
+#
+# Format: **singleton** manifest (all fields in one document), current
+# WinGet schema v1.12.0:
+#   https://aka.ms/winget-manifest.singleton.1.12.0.schema.json
+# (The same fields can alternatively be split into the multi-file
+# version/locale/installer set — `ManifestType: version` / `locale` /
+# `installer` — per current winget-pkgs convention; the installer
+# manifest then carries `InstallerType`, `NestedInstallerType` and
+# `NestedInstallerFiles` at the root, as in the official
+# `Docker.DockerCLI` package.)
+#
+# Installer route: **portable ZIP** — supported by the official schema:
+#   InstallerType: zip
+#   NestedInstallerType: portable
+#   NestedInstallerFiles:
+#     - RelativeFilePath: <path inside the zip>
+#       PortableCommandAlias: ltop
+# `RelativeFilePath` is relative to the zip root (it includes the
+# archive's top-level directory). winget extracts the zip and registers
+# the alias; no installer database, no elevation.
+#
+# Why it is not submittable TODAY (practical blockers, NOT schema rules —
+# the schema accepts an unsigned zip/portable manifest):
+#   1. The public release URL does not exist yet. The repository and the
+#      v0.1.0 GitHub Release (with the archive as an asset) are staged but
+#      not published, so `InstallerUrl` would 404. WinGet URL policy
+#      requires the InstallerUrl to come directly from the publisher's
+#      release location (third-party redirectors are rejected); a GitHub
+#      Releases download URL under the publisher's own repository is the
+#      publisher's release location — GitHub's internal 302 to its own
+#      asset CDN is expected and does not violate the policy.
+#   2. The 0.1.0 Windows binary is NOT Authenticode-signed. An unsigned
+#      portable exe may be flagged by antivirus/SmartScreen during
+#      winget-pkgs review. Signing is the planned mitigation (see
+#      ../../docs/DISTRIBUTION.md §4); a self-signed certificate does not
+#      satisfy public SmartScreen trust.
+#   3. `InstallerSha256` below is the hash of the currently STAGED archive
+#      (pinned in releases/v0.1.0/SHA256SUMS). Re-verify it against the
+#      published release asset before submission.
+#
+# To submit (future):
+#   - publish the repository and the v0.1.0 release with the archive asset,
+#   - rename this file to `pauldckim.ltop.0.1.0.yaml` under
+#     `manifests/p/pauldckim/ltop/0.1.0/` in a clone of
+#     microsoft/winget-pkgs (or promote it to the multi-file set),
+#   - re-verify the hash against the published asset,
+#   - run `winget validate` against the manifest schema,
+#   - open a pull request at https://github.com/microsoft/winget-pkgs.
+# ===========================================================================
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.singleton.1.12.0.schema.json
+PackageIdentifier: pauldckim.ltop
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: pauldckim
+PackageName: ltop
+PackageUrl: https://github.com/pauldckim/ltop-release
+License: Proprietary freeware (free use and unmodified redistribution; no sale, no modification, no reverse engineering)
+LicenseUrl: https://github.com/pauldckim/ltop-release/blob/main/LICENSE.md
+ShortDescription: Single-binary TUI monitor for llama.cpp llama-server and its local process
+Description: >-
+  ltop is a single-binary, keyboard-only terminal dashboard that monitors a
+  local llama.cpp llama-server and the OS process behind it, read-only. It
+  polls the server's /metrics, /slots and /props endpoints plus local
+  process CPU/memory. Proprietary freeware: free to use and to redistribute
+  unmodified; no sale, no modification, no reverse engineering. Source code
+  is not published.
+ReleaseNotesUrl: https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0
+Platform:
+  - Windows.Desktop
+MinimumOSVersion: 10.0.17763.0
+InstallerType: zip
+NestedInstallerType: portable
+NestedInstallerFiles:
+  - RelativeFilePath: ltop-v0.1.0-windows-x86_64/ltop.exe
+    PortableCommandAlias: ltop
+Installers:
+  - Architecture: x64
+    # GitHub Releases asset URL under the publisher's own repository — the
+    # publisher's release location per WinGet URL policy (GitHub's internal
+    # 302 to its asset CDN is expected, not a third-party redirector). The
+    # archive is staged locally (dist/v0.1.0/) and will be published as a
+    # release asset; the URL becomes reachable once published.
+    InstallerUrl: https://github.com/pauldckim/ltop-release/releases/download/v0.1.0/ltop-v0.1.0-windows-x86_64.zip
+    # SHA-256 of the staged ltop-v0.1.0-windows-x86_64.zip (pinned in
+    # releases/v0.1.0/SHA256SUMS); re-verify against the published asset.
+    InstallerSha256: 56731ea57a8aff8f8ffc07229aedb9810b6f7e534def0f7ea26ccd4228dab572
+    Scope: user
+    UpgradeBehavior: install
+ReleaseDate: '2026-09-05'
+ManifestType: singleton
+ManifestVersion: 1.12.0
