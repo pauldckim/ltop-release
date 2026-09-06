@@ -27,25 +27,15 @@
 #
 # Why it is not submittable TODAY (practical blockers, NOT schema rules —
 # the schema accepts an unsigned zip/portable manifest):
-#   1. The public release URL does not exist yet. The repository and the
-#      v0.1.0 GitHub Release (with the archive as an asset) are staged but
-#      not published, so `InstallerUrl` would 404. WinGet URL policy
-#      requires the InstallerUrl to come directly from the publisher's
-#      release location (third-party redirectors are rejected); a GitHub
-#      Releases download URL under the publisher's own repository is the
-#      publisher's release location — GitHub's internal 302 to its own
-#      asset CDN is expected and does not violate the policy.
-#   2. The 0.1.0 Windows binary is NOT Authenticode-signed. An unsigned
+#   1. The 0.1.0 Windows binary is NOT Authenticode-signed. An unsigned
 #      portable exe may be flagged by antivirus/SmartScreen during
 #      winget-pkgs review. Signing is the planned mitigation (see
 #      ../../docs/DISTRIBUTION.md §4); a self-signed certificate does not
 #      satisfy public SmartScreen trust.
-#   3. `InstallerSha256` below is the hash of the currently STAGED archive
-#      (pinned in releases/v0.1.0/SHA256SUMS). Re-verify it against the
-#      published release asset before submission.
+#   2. `InstallerSha256` below is the verified hash of the published archive
+#      (pinned in releases/v0.1.0/SHA256SUMS).
 #
 # To submit (future):
-#   - publish the repository and the v0.1.0 release with the archive asset,
 #   - rename this file to `pauldckim.ltop.0.1.0.yaml` under
 #     `manifests/p/pauldckim/ltop/0.1.0/` in a clone of
 #     microsoft/winget-pkgs (or promote it to the multi-file set),
@@ -84,11 +74,10 @@ Installers:
     # GitHub Releases asset URL under the publisher's own repository — the
     # publisher's release location per WinGet URL policy (GitHub's internal
     # 302 to its asset CDN is expected, not a third-party redirector). The
-    # archive is staged locally (dist/v0.1.0/) and will be published as a
-    # release asset; the URL becomes reachable once published.
+    # archive is published as a v0.1.0 GitHub Release asset.
     InstallerUrl: https://github.com/pauldckim/ltop-release/releases/download/v0.1.0/ltop-v0.1.0-windows-x86_64.zip
-    # SHA-256 of the staged ltop-v0.1.0-windows-x86_64.zip (pinned in
-    # releases/v0.1.0/SHA256SUMS); re-verify against the published asset.
+    # SHA-256 of the published ltop-v0.1.0-windows-x86_64.zip (pinned in
+    # releases/v0.1.0/SHA256SUMS).
     InstallerSha256: 56731ea57a8aff8f8ffc07229aedb9810b6f7e534def0f7ea26ccd4228dab572
     Scope: user
     UpgradeBehavior: install

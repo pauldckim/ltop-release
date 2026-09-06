@@ -2,15 +2,14 @@
 
 ## Current status (read this first)
 
-**v0.1.0 is staged, not yet published.** The public repository and the
-GitHub Release with the archive assets do not exist yet. The archives live
-in local staging (`dist/v0.1.0/`, gitignored) and the checksum manifest is
-tracked at `releases/v0.1.0/SHA256SUMS`. The checksums below are the pinned
-values of the **staged** archives; deterministic packaging (byte-identical
-second run verified) means they will be the values of the published release
-assets.
+**v0.1.0 was published on 2026-09-06.** Download the archives and
+`SHA256SUMS` from the
+[GitHub Release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0).
+The checksum manifest is also tracked at
+`releases/v0.1.0/SHA256SUMS`. The published assets were downloaded again
+after publication and verified byte-for-byte against the staged artifacts.
 
-**Intended publishing policy:** when published, each version is a git tag
+**Publishing policy:** each version is a git tag
 (`vX.Y.Z`) with a GitHub Release attached; the archives + `SHA256SUMS`
 become release assets and are **never modified in place** — a changed
 artifact means a new version (or a new release with the old one
@@ -56,8 +55,7 @@ carries its binary's hash.
 
 ### How to verify
 
-Once published, download the release `SHA256SUMS` asset next to your
-archive, then:
+Download the release `SHA256SUMS` asset next to your archive, then:
 
 ```sh
 # macOS
@@ -128,7 +126,7 @@ signing work.
 
 ## What is verified today
 
-- SHA-256 checksums of every staged archive (this file +
+- SHA-256 checksums of every published archive (this file +
   `releases/v0.1.0/SHA256SUMS` + `dist/v0.1.0/SHA256SUMS`), and of the
   binaries inside them.
 - Binary quality: the shipped binaries are stripped and carry
@@ -147,11 +145,10 @@ signing work.
 - Screenshot validation: the dashboard screenshots are genuine Terminal
   captures; see the capture procedure and validation table below.
 
-**Publishing (intended, not yet done):** when the release is published, the
-archives + `SHA256SUMS` become assets of the immutable `v0.1.0` GitHub
-Release and are never modified in place (see the policy at the top of this
-file). Until then, verification is against the staged archives and the
-tracked checksum manifest.
+**Published verification:** the archives and `SHA256SUMS` are assets of the
+`v0.1.0` GitHub Release. GitHub's reported asset digests match the tracked
+manifest, and independently downloaded assets passed `SHA256SUMS` in full.
+Published assets are never modified in place; changes require a new release.
 
 ## Screenshot validation (genuine Terminal captures)
 

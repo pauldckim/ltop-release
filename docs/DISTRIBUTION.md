@@ -163,25 +163,13 @@ storage and is referenced only by name in release notes.
   portable-ZIP manifest** (`.yaml.template`, deliberately not a `.yaml` so
   tooling never picks it up). It is validated against the official
   singleton schema v1.12.0 and carries the real v0.1.0 archive URL and the
-  SHA-256 of the staged `ltop-v0.1.0-windows-x86_64.zip` (pinned in
+  SHA-256 of the published `ltop-v0.1.0-windows-x86_64.zip` (pinned in
   `releases/v0.1.0/SHA256SUMS`).
 - It is **not submittable as-is** for practical reasons, not schema
   reasons:
-  1. the public release URL does not exist yet — the repository and the
-     `v0.1.0` GitHub Release with the archive asset are staged but not
-     published, so `InstallerUrl` would 404. WinGet URL policy requires the
-     `InstallerUrl` to come **directly from the publisher's release
-     location** (`Validation-Indirect-URL` / `Validation-Domain` reject
-     third-party redirectors and vanity URLs). A GitHub Releases download
-     URL under the publisher's own repository is the publisher's release
-     location and is the standard route in winget-pkgs; GitHub serves the
-     asset through an internal 302 to its own asset CDN
-     (`release-assets.githubusercontent.com`), which is GitHub's delivery
-     of the publisher's asset, not a third-party redirector, so the URL
-     does not violate the policy;
-  2. the 0.1.0 Windows binary is unsigned; an unsigned portable exe may be
+  1. the 0.1.0 Windows binary is unsigned; an unsigned portable exe may be
      flagged by AV/SmartScreen during review (see §4).
-- **Route:** once the release is published (and ideally the binary is
+- **Route:** once the binary is signed (recommended before submission),
   Authenticode-signed), promote the template to
   `manifests/p/pauldckim/ltop/0.1.0/pauldckim.ltop.0.1.0.yaml` (or the
   multi-file `version`/`locale`/`installer` set) in a `microsoft/winget-pkgs`

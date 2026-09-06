@@ -11,10 +11,10 @@ Grafana required.
 - **License:** proprietary freeware (see [LICENSE.md](LICENSE.md)). The
   **source code is not distributed** and is not available from the
   distributor.
-- **Current release:** [v0.1.0](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0) (2026-09-05)
-  (staged; the release assets are pinned in
-  [`releases/v0.1.0/SHA256SUMS`](releases/v0.1.0/SHA256SUMS) — see
-  [docs/VERIFY.md](docs/VERIFY.md) for the current status)
+- **Current release:** [v0.1.0](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0) (published 2026-09-06)
+  — release assets are pinned in
+  [`releases/v0.1.0/SHA256SUMS`](releases/v0.1.0/SHA256SUMS); see
+  [docs/VERIFY.md](docs/VERIFY.md) for verification instructions.
 
 ## Screenshots
 
