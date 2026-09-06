@@ -1,61 +1,62 @@
-# Homebrew channel (template — NOT active)
+# Homebrew channel (own tap — chosen route, preparation complete)
 
-This directory contains a **disabled, future-ready template** for a Homebrew
-cask that would install ltop from this repository's GitHub Releases.
+The **own tap** is the chosen Homebrew distribution route for ltop, and
+its preparation is complete:
 
-## Why it is a template (`.rb.template`), not a cask
+| Item | Value |
+|---|---|
+| Tap name | `pauldckim/tap` |
+| Tap repository | [`pauldckim/homebrew-tap`](https://github.com/pauldckim/homebrew-tap) (staged locally at `../homebrew-tap/` in the parent project) |
+| Live cask | `Casks/ltop.rb` in the tap repository |
+| Install (one line) | `brew install --cask pauldckim/tap/ltop` |
+| Platform | macOS x86_64 only (v0.1.0 ships a macOS x86_64 binary; `depends_on arch: :x86_64`) |
+| Source of the binary | the official GitHub release in **this** repository (`pauldckim/ltop-release`), pinned by SHA-256 |
 
-The file is named `ltop.rb.template` on purpose: Homebrew only loads
-`Casks/*.rb`, so this template can never be accidentally installed or
-audited as a live cask. It also contains explicit placeholders that would
-fail `brew audit`/`brew style`.
+## How the one-line install works (Homebrew ≥ 6)
 
-**Activation blockers (all must be resolved before converting to
-`Casks/ltop.rb` in a tap):**
+`brew install --cask pauldckim/tap/ltop` does everything:
 
-1. **Signed + notarized macOS artifacts.** ltop 0.1.0 macOS binaries are
-   **unsigned**. Homebrew applies quarantine to cask downloads and requires
-   executable artifacts to **pass Gatekeeper on a default macOS
-   configuration** — i.e. Developer ID signature + Apple notarization.
-   Unsigned artifacts are not acceptable for an official cask and produce
-   a broken first-run experience in a tap cask.
-   Self-signed certificates do **not** satisfy this (see
-   [../docs/DISTRIBUTION.md](../docs/DISTRIBUTION.md) §4).
-2. **Real `sha256` values.** The template carries the placeholders
-   `sha256 "REPLACE_WITH_REAL_SHA256_MACOS_ARM64"` and
-   `sha256 "REPLACE_WITH_REAL_SHA256_MACOS_X86_64"` for the macOS arm64 and
-   x86_64 archives (and `sha256 "REPLACE_WITH_REAL_SHA256_LINUX_X86_64"`
-   for the Linux archive).
-3. **Architecture coverage.** The template expects both `macos-arm64` and
-   `macos-x86_64` artifacts; 0.1.0 ships x86_64 only.
-4. **Notability / official cask (if pursuing `homebrew/cask`).** Official
-   inclusion additionally requires public presence and notability
-   thresholds (self-submission: 90 forks / 90 watchers / 225 stars, repo
-   ≥ 30 days old) plus maintainer discretion. The realistic near-term
-   route is an **own tap** (`pauldckim/ltop-tap`), where the acceptance
-   policy does not apply but the Gatekeeper requirement still does.
+1. **Auto-tap.** The fully-qualified cask name makes Homebrew tap
+   `pauldckim/tap` automatically (cloning
+   `https://github.com/pauldckim/homebrew-tap`) if it is not tapped yet.
+   No separate `brew tap` step is needed.
+2. **Scoped trust.** Since Homebrew 6, non-official taps must be
+   explicitly trusted before their casks are loaded. A fully-qualified
+   install trusts **only this cask** (`pauldckim/tap/ltop`), recorded in
+   `~/.homebrew/trust.json` — it does not blanket-trust the whole tap.
+   Installing by the bare name instead (`brew install --cask ltop`)
+   requires `brew trust --cask pauldckim/tap/ltop` first.
+3. **Official source only.** The cask is declarative: Homebrew downloads
+   the release archive from this repository's GitHub Release and
+   verifies its SHA-256. The tap repository contains no binaries and no
+   install scripts — nothing is copied out of the tap and executed
+   locally.
 
-## Planned tap structure (future)
+## Unsigned limitation (0.1.0)
 
-```
-pauldckim/ltop-tap/            # separate public git repository
-  Casks/
-    ltop.rb                    # promoted from this template
-  README.md                    # tap description, trust instructions, license link
-```
+The v0.1.0 macOS binary is **not** Developer-ID signed or notarized.
+The cask installs it anyway as a **convenience channel**: Homebrew
+applies the quarantine attribute to the download (and does not remove
+it), so the first run is blocked by Gatekeeper. The cask's `caveats`
+print the exact procedure: verify the archive checksum, then either
+remove the quarantine recursively
+(`xattr -dr com.apple.quarantine /usr/local/Caskroom/ltop`) before the
+first run, or use **System Settings → Privacy & Security → Open
+Anyway** after a blocked first run.
 
-Planned user install (once activated):
+**Developer-ID signing + notarization remains the proper future fix**
+(see [../docs/DISTRIBUTION.md](../docs/DISTRIBUTION.md) §4): once the
+macOS artifacts are signed and notarized, the first-run caveats become
+unnecessary, and submission to the official `homebrew/cask`
+additionally becomes realistic (notability thresholds apply there; they
+do not for an own tap).
 
-```sh
-brew tap pauldckim/ltop-tap
-brew trust --cask pauldckim/ltop-tap/ltop   # required for non-official taps (Homebrew >= 6.0.0)
-brew install --cask ltop
-```
+## Reference template
 
-## Template contents
-
-- `ltop.rb.template` — the cask definition with placeholders
-  (`version`, per-arch `sha256`, `url` pointing at this repository's
-  GitHub Releases, `binary` stanza, proprietary-license caveat).
+- `Casks/ltop.rb.template` — a **reference copy** of the live cask. It
+  is named `.template` (not `.rb`) so Homebrew never loads it from this
+  repository; the live copy is `Casks/ltop.rb` in the
+  `pauldckim/homebrew-tap` tap repository. Keep the two in sync when the
+  cask changes.
 
 Do not `brew install` anything from this directory.

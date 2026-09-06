@@ -76,7 +76,25 @@ machine-local paths are embedded in the shipped binaries (see
 
 ## Installation
 
-Download the archive for your platform from the
+**macOS x86_64 with Homebrew (one line):**
+
+```sh
+brew install --cask pauldckim/tap/ltop
+```
+
+The fully-qualified command auto-taps `pauldckim/tap` (repository
+[`pauldckim/homebrew-tap`](https://github.com/pauldckim/homebrew-tap))
+and, under Homebrew ≥ 6, trusts **only this cask** — no separate
+`brew tap` or `brew trust` steps. The cask downloads the archive from
+the official release below and verifies its SHA-256. The 0.1.0 binary
+is unsigned, so the first run is blocked by Gatekeeper; `brew install`
+prints the exact unblock procedure as cask caveats (verify checksum →
+remove the quarantine, or System Settings → Privacy & Security →
+"Open Anyway"). See [docs/INSTALL.md](docs/INSTALL.md) and
+[docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) §5.
+
+**Manual install (all platforms):** download the archive for your
+platform from the
 [v0.1.0 release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0),
 verify the SHA-256 checksum ([docs/VERIFY.md](docs/VERIFY.md)), extract, and
 put the binary on your `PATH`:
@@ -98,8 +116,10 @@ Full per-OS instructions: [docs/INSTALL.md](docs/INSTALL.md).
 > downloaded from the internet; on Windows, SmartScreen may show a warning.
 > Verify the SHA-256 checksum first, then follow the platform notes in
 > [docs/VERIFY.md](docs/VERIFY.md). These packages do **not** satisfy
-> official Homebrew cask requirements (which need Developer ID +
-> notarization) — see [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md).
+> *official* Homebrew cask requirements (which need Developer ID +
+> notarization); the own tap (`pauldckim/tap`) is the prepared Homebrew
+> route and handles the unsigned first run via explicit caveats — see
+> [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) §5.
 
 ## Usage
 
@@ -205,7 +225,8 @@ releases/<ver>/SHA256SUMS  tracked checksum manifest per release
 docs/                   INSTALL, VERIFY, SECURITY, DISTRIBUTION
 assets/screenshots/     dashboard screenshots (real Terminal captures
                         against a local mock server)
-homebrew/               Homebrew cask template (disabled until signed)
+homebrew/               Homebrew cask reference copy (live cask is in
+                        the pauldckim/homebrew-tap tap repository)
 winget/                 WinGet manifest template (disabled until published/signed)
 scripts/                public-safe packaging + checksum verification helpers
 ```

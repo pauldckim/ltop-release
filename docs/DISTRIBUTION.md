@@ -141,14 +141,26 @@ storage and is referenced only by name in release notes.
   (a) macOS artifacts that pass Gatekeeper on a default configuration —
   i.e. **Developer ID signature + notarization** — (b) public presence /
   notability thresholds, and (c) maintainer discretion. None of these are
-  met yet. A template is kept at `homebrew/Casks/ltop.rb.template`
-  (deliberately **not** a `.rb` file, so `brew` will never load it) with
-  the activation blockers documented in `homebrew/README.md`.
-- **Own third-party tap (future):** a `pauldckim/ltop-tap` repository with
-  a cask is the realistic Homebrew route once the macOS binary is
-  signed/notarized. Note: since Homebrew 6.0.0, non-official taps require
-  explicit user trust (`brew trust`), and a tap cask still needs the
-  Gatekeeper-passing artifact.
+  met yet.
+- **Own third-party tap: chosen route (preparation complete).** The tap
+  `pauldckim/tap` (repository `pauldckim/homebrew-tap`) carries a cask
+  that installs the macOS x86_64 binary from this repository's GitHub
+  Release. One-line install:
+  `brew install --cask pauldckim/tap/ltop`. Since Homebrew 6.0.0,
+  non-official taps require explicit user trust: a fully-qualified
+  install auto-taps the repository and trusts **only this cask**
+  (cask-scoped entry in `~/.homebrew/trust.json`), not the whole tap.
+  Because the 0.1.0 binary is unsigned, the cask carries explicit
+  first-run caveats (verify the archive checksum, then remove the
+  quarantine recursively with `xattr -dr` or use System Settings →
+  Privacy & Security → "Open Anyway"); it does **not** remove the
+  quarantine automatically. Developer ID + notarization remains the
+  proper future fix (§4): once the artifacts pass Gatekeeper, the
+  caveats become unnecessary and the official `homebrew/cask` route
+  becomes realistic as well. The live cask (`Casks/ltop.rb` in the tap
+  repository) is mirrored as a reference at
+  `homebrew/Casks/ltop.rb.template` (deliberately **not** a `.rb` file,
+  so `brew` will never load it); details in `homebrew/README.md`.
 
 ### WinGet
 
@@ -180,8 +192,9 @@ storage and is referenced only by name in release notes.
 ### Linux
 
 Direct archive + checksums (this repository / GitHub Releases) is the
-channel. Homebrew-on-Linux (Linuxbrew) users could use the future tap
-cask; distro repositories are out of scope.
+channel. The own-tap cask is macOS x86_64 only (`depends_on
+arch: :x86_64`), so Linuxbrew users keep using the archive route;
+distro repositories are out of scope.
 
 ## 6. What is (not) in a release
 

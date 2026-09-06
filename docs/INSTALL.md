@@ -10,6 +10,38 @@ and **verify the checksum before running anything**
 
 ## macOS (x86_64)
 
+### Homebrew (recommended, one line)
+
+```sh
+brew install --cask pauldckim/tap/ltop
+```
+
+The fully-qualified command does everything: it auto-taps
+`pauldckim/tap` (repository `pauldckim/homebrew-tap`) if needed and,
+under Homebrew ≥ 6, trusts **only this cask** (cask-scoped entry in
+`~/.homebrew/trust.json`, not the whole tap). Homebrew downloads the
+archive from the official release and verifies its SHA-256.
+
+**Unsigned first run.** The 0.1.0 binary is not Developer-ID signed or
+notarized, and the cask does not remove the macOS quarantine attribute
+for you. `brew install` prints the exact steps as caveats: verify the
+checksum of the cached download, then either
+
+```sh
+xattr -dr com.apple.quarantine /usr/local/Caskroom/ltop   # before first run
+```
+
+or run `ltop` once (it is blocked), then open
+**System Settings → Privacy & Security** and click **Open Anyway** next
+to the ltop warning. (If `ltop` was already run once and blocked, the
+quarantine removal alone may not be enough — macOS caches the
+assessment per path; use System Settings or reboot.)
+
+Uninstall: `brew uninstall --cask ltop` (plus optional
+`brew untrust --cask pauldckim/tap/ltop` and `brew untap pauldckim/tap`).
+
+### Manual install
+
 ```sh
 # 1. Verify the archive (see VERIFY.md for the expected value)
 shasum -a 256 ltop-v0.1.0-macos-x86_64.zip

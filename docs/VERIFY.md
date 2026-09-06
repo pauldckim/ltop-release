@@ -142,6 +142,13 @@ signing work.
   locked packages (151 distinct texts; gaps flagged, not papered over).
 - Deterministic packaging: a second packaging run from the same inputs
   produced byte-identical archives.
+- Homebrew own-tap cask: `pauldckim/tap` (repository
+  `pauldckim/homebrew-tap`) pins the same `sha256`
+  (`e4d60310db4f638f9cf01e182be1bc35e1b39678e0dcf9d7c260e2a84b7a5b42`)
+  for `ltop-v0.1.0-macos-x86_64.zip`; the cask was installed end-to-end
+  from the published release asset on macOS 15.7.8 and macOS 26.6.2
+  (Homebrew 6.0.22) and the downloaded archive re-verified by hash
+  (see `homebrew/README.md`).
 - Screenshot validation: the dashboard screenshots are genuine Terminal
   captures; see the capture procedure and validation table below.
 
