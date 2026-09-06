@@ -11,10 +11,15 @@ Grafana required.
 - **License:** proprietary freeware (see [LICENSE.md](LICENSE.md)). The
   **source code is not distributed** and is not available from the
   distributor.
-- **Current release:** [v0.1.0](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0) (published 2026-09-06)
-  — release assets are pinned in
-  [`releases/v0.1.0/SHA256SUMS`](releases/v0.1.0/SHA256SUMS); see
+- **Current release:** v0.1.1 (staged 2026-09-06; publication pending) —
+  adds macOS arm64 (Apple Silicon) and rebuilds macOS x86_64 at the new
+  version; release assets are pinned in
+  [`releases/v0.1.1/SHA256SUMS`](releases/v0.1.1/SHA256SUMS); see
   [docs/VERIFY.md](docs/VERIFY.md) for verification instructions.
+- **Published releases:** [v0.1.0](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0)
+  (published 2026-09-06) remains the current release for **Windows x86_64
+  and Linux x86_64** (0.1.1 is macOS-only); its assets are pinned in
+  [`releases/v0.1.0/SHA256SUMS`](releases/v0.1.0/SHA256SUMS).
 
 ## Screenshots
 
@@ -29,7 +34,9 @@ model `qwen3-4b-q4_k_m.gguf`, context 32,768, 2 slots, a live generation
 in flight). CPU, memory, PID and uptime are real measurements of a
 controlled local worker process on the capture host — its ephemeral PID is
 shown as rendered; on macOS VIRT and thread count are N/A by design.
-See [docs/VERIFY.md](docs/VERIFY.md) for the capture procedure.*
+The 0.1.1 UI is identical to 0.1.0 (no product behavior changes), so
+these captures remain representative. See
+[docs/VERIFY.md](docs/VERIFY.md) for the capture procedure.*
 
 ## Features
 
@@ -58,25 +65,32 @@ See [docs/VERIFY.md](docs/VERIFY.md) for the capture procedure.*
 
 ## Platform support
 
-| Platform | 0.1.0 artifact | Signing status |
-|---|---|---|
-| macOS x86_64 | `ltop-v0.1.0-macos-x86_64.zip` | **unsigned** — no Developer ID / notarization yet (see [docs/VERIFY.md](docs/VERIFY.md)) |
-| Windows x86_64 | `ltop-v0.1.0-windows-x86_64.zip` | **unsigned** — no Authenticode yet (see [docs/VERIFY.md](docs/VERIFY.md)) |
-| Linux x86_64 | `ltop-v0.1.0-linux-x86_64.tar.gz` | n/a (checksums only) — glibc dynamic build |
+| Platform | Current artifact | Version | Signing status |
+|---|---|---|---|
+| macOS arm64 (Apple Silicon) | `ltop-v0.1.1-macos-arm64.zip` | 0.1.1 | **ad-hoc signed** — no Developer ID / notarization yet (see [docs/VERIFY.md](docs/VERIFY.md)) |
+| macOS x86_64 (Intel) | `ltop-v0.1.1-macos-x86_64.zip` | 0.1.1 | **ad-hoc signed** — no Developer ID / notarization yet (see [docs/VERIFY.md](docs/VERIFY.md)) |
+| Windows x86_64 | `ltop-v0.1.0-windows-x86_64.zip` | 0.1.0 | **unsigned** — no Authenticode yet (see [docs/VERIFY.md](docs/VERIFY.md)) |
+| Linux x86_64 | `ltop-v0.1.0-linux-x86_64.tar.gz` | 0.1.0 | n/a (checksums only) — glibc dynamic build |
 
-macOS arm64, Windows arm64 and Linux aarch64 are **not** included in 0.1.0.
+**0.1.1 is macOS-only**: it adds macOS arm64 (one generic
+`aarch64-apple-darwin` target covering all M1–M5 Macs, deployment target
+macOS 11.0/Big Sur) and rebuilds the macOS x86_64 artifact at the new
+version. The published **0.1.0 Windows and Linux artifacts remain the
+current release for those platforms** and are unchanged. Windows arm64
+and Linux aarch64 are **not** included.
+
 The macOS and Windows binaries are plain CLI executables; no native
 installer (MSI/PKG/DMG/RPM) is shipped — a single binary plus a checksum is
 the complete install (see [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md)).
 
-All 0.1.0 binaries are **stripped** (symbol/debug information removed) and
-built with build-machine paths remapped to a neutral prefix, so no
+All shipped binaries are **stripped** (symbol/debug information removed)
+and built with build-machine paths remapped to a neutral prefix, so no
 machine-local paths are embedded in the shipped binaries (see
 [docs/VERIFY.md](docs/VERIFY.md)).
 
 ## Installation
 
-**macOS x86_64 with Homebrew (one line):**
+**macOS (both architectures) with Homebrew (one line):**
 
 ```sh
 brew install --cask pauldckim/tap/ltop
@@ -85,40 +99,53 @@ brew install --cask pauldckim/tap/ltop
 The fully-qualified command auto-taps `pauldckim/tap` (repository
 [`pauldckim/homebrew-tap`](https://github.com/pauldckim/homebrew-tap))
 and, under Homebrew ≥ 6, trusts **only this cask** — no separate
-`brew tap` or `brew trust` steps. The cask downloads the archive from
-the official release below and verifies its SHA-256. The 0.1.0 binary
-is unsigned, so the first run is blocked by Gatekeeper; `brew install`
-prints the exact unblock procedure as cask caveats (verify checksum →
-remove the quarantine, or System Settings → Privacy & Security →
+`brew tap` or `brew trust` steps. The cask selects the archive for your
+machine (macOS arm64 or x86_64, 0.1.1), downloads it from the official
+release, and verifies its SHA-256. The 0.1.1 binaries are ad-hoc signed
+but **not** Developer-ID signed or notarized, so the first run of a
+quarantined download is blocked by Gatekeeper; `brew install` prints the
+exact unblock procedure as cask caveats (verify checksum → remove the
+quarantine recursively, or System Settings → Privacy & Security →
 "Open Anyway"). See [docs/INSTALL.md](docs/INSTALL.md) and
 [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) §5.
 
 **Manual install (all platforms):** download the archive for your
-platform from the
-[v0.1.0 release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0),
-verify the SHA-256 checksum ([docs/VERIFY.md](docs/VERIFY.md)), extract, and
-put the binary on your `PATH`:
+platform — macOS from the v0.1.1 release, Windows/Linux from the
+[v0.1.0 release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0)
+— verify the SHA-256 checksum ([docs/VERIFY.md](docs/VERIFY.md)), extract,
+and put the binary on your `PATH`:
 
 ```sh
-# macOS / Linux
-unzip ltop-v0.1.0-macos-x86_64.zip        # or: tar xzf ltop-v0.1.0-linux-x86_64.tar.gz
-install -m 0755 ltop-v0.1.0-macos-x86_64/ltop /usr/local/bin/ltop
+# macOS (Apple Silicon)
+unzip ltop-v0.1.1-macos-arm64.zip
+install -m 0755 ltop-v0.1.1-macos-arm64/ltop /usr/local/bin/ltop
 
-# Windows (PowerShell)
+# macOS (Intel)
+unzip ltop-v0.1.1-macos-x86_64.zip
+install -m 0755 ltop-v0.1.1-macos-x86_64/ltop /usr/local/bin/ltop
+
+# Linux (0.1.0 — current Linux release)
+tar xzf ltop-v0.1.0-linux-x86_64.tar.gz
+install -m 0755 ltop-v0.1.0-linux-x86_64/ltop /usr/local/bin/ltop
+
+# Windows (PowerShell, 0.1.0 — current Windows release)
 Expand-Archive .\ltop-v0.1.0-windows-x86_64.zip
 # then add the extracted folder to PATH, or run ltop.exe from it
 ```
 
 Full per-OS instructions: [docs/INSTALL.md](docs/INSTALL.md).
 
-> **Unsigned binaries.** The 0.1.0 macOS and Windows binaries are unsigned.
-> On macOS, Gatekeeper will block first launch of an unsigned binary
-> downloaded from the internet; on Windows, SmartScreen may show a warning.
+> **Unsigned / ad-hoc-signed binaries.** The 0.1.1 macOS binaries are
+> ad-hoc signed (the arm64 binary requires at least an ad-hoc signature
+> to launch on Apple Silicon; the x86_64 binary is ad-hoc signed for
+> consistency) but are **not** Developer-ID signed or notarized — on macOS,
+> Gatekeeper will still block the first run of a quarantined download. The
+> 0.1.0 Windows binary is unsigned; SmartScreen may show a warning.
 > Verify the SHA-256 checksum first, then follow the platform notes in
 > [docs/VERIFY.md](docs/VERIFY.md). These packages do **not** satisfy
 > *official* Homebrew cask requirements (which need Developer ID +
 > notarization); the own tap (`pauldckim/tap`) is the prepared Homebrew
-> route and handles the unsigned first run via explicit caveats — see
+> route and handles the blocked first run via explicit caveats — see
 > [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) §5.
 
 ## Usage
@@ -188,10 +215,12 @@ linked into the binary are identified in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), which is
 **self-contained**: it carries the verbatim license and copyright texts
 collected from the cargo registry sources of all 299 locked packages
-(gaps are flagged in the file, not papered over). Canonical SPDX license
-texts under [`third-party/licenses/`](third-party/licenses/) are a
-supplemental reference, and a CycloneDX SBOM is at
-[`sbom/ltop-v0.1.0.cdx.json`](sbom/ltop-v0.1.0.cdx.json).
+(gaps are flagged in the file, not papered over). The component inventory
+is unchanged between 0.1.0 and 0.1.1 (same dependency lock). Canonical
+SPDX license texts under [`third-party/licenses/`](third-party/licenses/)
+are a supplemental reference, and the CycloneDX SBOMs are at
+[`sbom/ltop-v0.1.1.cdx.json`](sbom/ltop-v0.1.1.cdx.json) (0.1.1) and
+[`sbom/ltop-v0.1.0.cdx.json`](sbom/ltop-v0.1.0.cdx.json) (0.1.0).
 
 ## Security
 

@@ -11,15 +11,26 @@
 #   <version>           release version, e.g. 0.1.0
 #   <inputs_dir>        directory with prebuilt binaries, layout:
 #                         macos-x86_64/ltop
+#                         macos-arm64/ltop
 #                         windows-x86_64/ltop.exe
 #                         linux-x86_64/ltop
-#                       (only the targets that exist are packaged)
+#                       (only the targets that exist are packaged; a
+#                       target directory that is not in the supported set
+#                       below aborts the run)
 #   <repo_root>         ltop-release root (must contain LICENSE.md and
 #                       THIRD_PARTY_NOTICES.md)
 #   <out_dir>           output directory for archives + SHA256SUMS
 #   [expected_sums]     optional SHA256SUMS of the input binaries; if given,
 #                       every input is verified against it BEFORE packaging
 #                       and any mismatch aborts the run.
+#
+# Supported targets (attributes are derived from the target name):
+#   macos-x86_64    binary ltop,      zip,   "macOS x86_64 (Intel)"
+#   macos-arm64     binary ltop,      zip,   "macOS arm64 (Apple Silicon)"
+#   windows-x86_64  binary ltop.exe,  zip,   "Windows x86_64"
+#   linux-x86_64    binary ltop,      tar.gz,"Linux x86_64 (glibc)"
+#   (windows-*  => .exe binary and no Unix executable bit in the zip;
+#    linux-*  => .tar.gz; everything else => .zip)
 #
 # Archive layout (each archive has one top-level directory):
 #   ltop-v<ver>-<target>/
@@ -31,9 +42,64 @@
 # Determinism: fixed entry order (sorted), fixed timestamps (release date),
 # no machine-local metadata. Identical inputs produce identical archives.
 #
+# Timestamp constants: the fixed entry timestamps are the release's
+# staging date (UTC), documented here so the archives are reproducible.
+# 0.1.1 (current): 2026-09-06. (0.1.0 used 2026-09-05; the published
+# 0.1.0 archives are immutable and were produced with that date.)
+#
 # Exit codes: 0 = ok, 1 = verification/packaging failure, 2 = usage error.
 
 set -u
+
+# Fixed order (deterministic SHA256SUMS line order and packaging order).
+SUPPORTED_TARGETS="macos-arm64 macos-x86_64 windows-x86_64 linux-x86_64"
+
+# Fixed timestamp for deterministic archives (release staging date, UTC).
+# TS_TOUCH is the touch(1) form of the same instant.
+TS_ZIP="2026,9,6,0,0,0"
+TS_TOUCH="202609060000.00"
+
+# Per-target attributes, derived from the target name.
+target_bin() {
+    case $1 in
+        windows-*) echo ltop.exe ;;
+        *)         echo ltop ;;
+    esac
+}
+target_ext() {
+    case $1 in
+        linux-*) echo .tar.gz ;;
+        *)       echo .zip ;;
+    esac
+}
+target_osline() {
+    case $1 in
+        macos-x86_64)   echo "macOS x86_64 (Intel)" ;;
+        macos-arm64)    echo "macOS arm64 (Apple Silicon)" ;;
+        windows-x86_64) echo "Windows x86_64" ;;
+        linux-x86_64)   echo "Linux x86_64 (glibc)" ;;
+        *)              echo "" ;;
+    esac
+}
+# Targets present in the inputs dir, in the fixed SUPPORTED_TARGETS order.
+# Errors (return 1) on any subdirectory that is not a supported target.
+list_targets() {
+    for d in "$inputs_dir"/*/; do
+        [ -d "$d" ] || continue
+        t=$(basename "$d")
+        case " $SUPPORTED_TARGETS " in
+            *" $t "*) : ;;
+            *)
+                echo "error: unsupported target directory: $t (supported: $SUPPORTED_TARGETS)" >&2
+                return 1 ;;
+        esac
+    done
+    for t in $SUPPORTED_TARGETS; do
+        if [ -d "$inputs_dir/$t" ]; then
+            echo "$t"
+        fi
+    done
+}
 
 if [ "$#" -lt 4 ] || [ "$#" -gt 5 ]; then
     echo "usage: $0 <version> <inputs_dir> <repo_root> <out_dir> [expected_sums]" >&2
@@ -45,11 +111,6 @@ inputs_dir=$2
 repo_root=$3
 out_dir=$4
 expected_sums=${5:-}
-
-# Fixed timestamp for deterministic archives (release date, UTC).
-# TS_TOUCH is the touch(1) form of the same instant.
-TS_ZIP="2026,9,5,0,0,0"
-TS_TOUCH="202609050000.00"
 
 for d in "$inputs_dir" "$repo_root"; do
     if [ ! -d "$d" ]; then
@@ -64,19 +125,26 @@ for f in "$repo_root/LICENSE.md" "$repo_root/THIRD_PARTY_NOTICES.md"; do
     fi
 done
 
+targets=$(list_targets) || exit 1
+
+if [ -z "$targets" ]; then
+    echo "error: no supported target directories under $inputs_dir" >&2
+    exit 1
+fi
+
 if [ -n "$expected_sums" ]; then
     if [ ! -f "$expected_sums" ]; then
         echo "error: expected sums file not found: $expected_sums" >&2
         exit 2
     fi
     # Verify each input binary against the expected sums (portable lookup).
-    for target in macos-x86_64 windows-x86_64 linux-x86_64; do
-        case $target in
-            windows-x86_64) bin=ltop.exe ;;
-            *)              bin=ltop ;;
-        esac
+    for target in $targets; do
+        bin=$(target_bin "$target")
         p="$inputs_dir/$target/$bin"
-        [ -f "$p" ] || continue
+        if [ ! -f "$p" ]; then
+            echo "error: input binary not found: $p" >&2
+            exit 1
+        fi
         if command -v sha256sum >/dev/null 2>&1; then
             actual=$(sha256sum "$p" | awk '{print tolower($1)}')
         else
@@ -117,13 +185,13 @@ trap 'rm -rf "$stage_root"' EXIT INT TERM
 
 sums_lines=""
 
-for target in macos-x86_64 windows-x86_64 linux-x86_64; do
-    case $target in
-        windows-x86_64) bin=ltop.exe ;;
-        *)              bin=ltop ;;
-    esac
+for target in $targets; do
+    bin=$(target_bin "$target")
     p="$inputs_dir/$target/$bin"
-    [ -f "$p" ] || continue
+    if [ ! -f "$p" ]; then
+        echo "error: input binary not found: $p" >&2
+        exit 1
+    fi
 
     dir="ltop-v${version}-${target}"
     stage="$stage_root/$dir"
@@ -135,19 +203,11 @@ for target in macos-x86_64 windows-x86_64 linux-x86_64; do
 
     bin_hash=$(sha256_of "$stage/$bin")
 
+    osline=$(target_osline "$target")
     case $target in
-        macos-x86_64)
-            osline="macOS x86_64 (Intel)"
-            extract="unzip ${dir}.zip"
-            ;;
-        windows-x86_64)
-            osline="Windows x86_64"
-            extract="Expand-Archive ${dir}.zip"
-            ;;
-        linux-x86_64)
-            osline="Linux x86_64 (glibc)"
-            extract="tar xzf ${dir}.tar.gz"
-            ;;
+        windows-*) extract="Expand-Archive ${dir}.zip" ;;
+        linux-*)   extract="tar xzf ${dir}.tar.gz" ;;
+        *)         extract="unzip ${dir}.zip" ;;
     esac
 
     cat > "$stage/README.txt" <<EOF
@@ -175,7 +235,7 @@ EOF
     # Deterministic archive.
     archive_abs=$(cd "$out_dir" && pwd)/${dir}
     case $target in
-        linux-x86_64)
+        linux-*)
             archive="${archive_abs}.tar.gz"
             # Portable deterministic tar (GNU tar and bsdtar alike):
             # fixed entry order (find | sort -z), zeroed owner/group,
@@ -196,7 +256,7 @@ import sys, zipfile, os
 stage_root, dir, archive, ts, target = sys.argv[1:6]
 date = tuple(int(x) for x in ts.split(","))
 names = sorted(os.listdir(os.path.join(stage_root, dir)))
-is_unix = target != "windows-x86_64"
+is_unix = not target.startswith("windows")
 with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as z:
     for n in names:
         full = os.path.join(stage_root, dir, n)
@@ -216,10 +276,7 @@ PYEOF
     esac
 
     arch_hash=$(sha256_of "$archive")
-    case $target in
-        linux-x86_64) ext=.tar.gz ;;
-        *)            ext=.zip ;;
-    esac
+    ext=$(target_ext "$target")
     sums_lines="${sums_lines}${arch_hash}  ${dir}${ext}
 "
     echo "packaged: $(basename "$archive")  sha256=${arch_hash}"

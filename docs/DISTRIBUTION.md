@@ -67,9 +67,11 @@ Native installer formats therefore add risk without adding capability:
    `profile.release.strip=symbols` (via the
    `CARGO_PROFILE_RELEASE_STRIP` environment variable; the product source
    is not modified). Re-verify `--version` and run a PTY smoke test after
-   stripping. The binaries are unsigned at 0.1.0, so stripping (which
-   would invalidate a later signature) is applied before any future
-   signing step; signed future releases must be signed after stripping.
+    stripping. The 0.1.0 binaries are unsigned, so stripping (which
+    would invalidate a later signature) is applied before any signing
+    step; signed releases must be signed after stripping. (0.1.1
+    followed exactly this order: strip → ad-hoc sign → re-verify →
+    final hash/scan; see §4.)
 3. **Fetch** the stripped binaries into a local staging area (never into
    the tracked tree).
 4. **Verify binary identity** — size and SHA-256 of each binary — *before*
@@ -91,16 +93,45 @@ Native installer formats therefore add risk without adding capability:
    platform (native or VM), scan the binaries for machine-local paths
    (`strings`), and confirm the archive contains no source, no scripts,
    no private paths or hosts.
-8. **Publish**: create the `v<ver>` tag and the GitHub Release with the
-   archives + `SHA256SUMS` as assets. Do not modify published assets.
-9. **Record**: update `CHANGELOG.md`, `docs/VERIFY.md` (real checksums +
-   signature status) and the parent project's durable release record.
+ 8. **Publish**: create the `v<ver>` tag and the GitHub Release with the
+    archives + `SHA256SUMS` as assets. Do not modify published assets.
+ 9. **Record**: update `CHANGELOG.md`, `docs/VERIFY.md` (real checksums +
+    signature status) and the parent project's durable release record.
+
+> **0.1.1 record (2026-09-06):** 0.1.1 is macOS-only — steps 1–7 were
+> performed for `macos-arm64` (cross-built on the Intel macOS VM, rustc
+> 1.98.0 pinned, default `aarch64-apple-darwin` codegen,
+> `MACOSX_DEPLOYMENT_TARGET=11.0`) and `macos-x86_64` (rebuilt on the
+> same VM) with the ad-hoc signing step of §4; the Windows and Linux
+> 0.1.0 artifacts were not touched and remain the current release for
+> those platforms. Step 8 (tag + GitHub Release) is **pending** — the
+> staged assets are pinned in `releases/v0.1.1/SHA256SUMS` and the
+> cask/template/docs are updated, but the tag and release are created
+> only after final verification. The packaging script
+> (`scripts/package-release.sh`) gained `macos-arm64` support with
+> target attributes derived from the target name (binary name, archive
+> extension, platform line) instead of a hardcoded target list.
 
 ## 4. Signing (status and plan)
 
-**Current (0.1.0): unsigned.** macOS and Windows binaries carry no code
-signature; Linux uses checksums only. See [VERIFY.md](VERIFY.md) for what
-this means per platform.
+**Current (0.1.1): macOS ad-hoc signed; Windows/Linux (0.1.0) unsigned.**
+The 0.1.1 macOS binaries are **ad-hoc signed** (`Signature=adhoc`): the
+arm64 binary must carry at least an ad-hoc signature to launch on Apple
+Silicon (a kernel requirement, not a trust requirement), and the x86_64
+binary is ad-hoc signed for consistency with the arm64 artifact (the
+0.1.0 x86_64 binary was unsigned; the 0.1.0 → 0.1.1 x86_64 delta is the
+version string plus this signature). Ad-hoc signing is **not** a
+Developer ID signature: neither binary passes Gatekeeper for quarantined
+downloads, and the unblock procedure in [INSTALL.md](INSTALL.md) applies
+unchanged. The 0.1.0 Windows binary remains unsigned (no Authenticode);
+Linux uses checksums only. See [VERIFY.md](VERIFY.md) for what this means
+per platform.
+
+The F1 ordering (build → functional re-verify → strip → sign → final
+hash/scan) was followed for 0.1.1: stripping invalidates signatures, so
+signing was the last step and the shipped hashes are the post-signing
+hashes; both binaries were functionally re-verified after signing
+(`--version`, PTY `q` smoke, linkage, machine-path scan).
 
 **Why self-signed certificates do not satisfy public trust:**
 
@@ -136,31 +167,42 @@ storage and is referenced only by name in release notes.
 
 - **`homebrew/core` formula: not possible.** Core formulas must build from
   DFSG-compatible open-source code; ltop is proprietary and binary-only.
-- **Official `homebrew/cask`: blocked for 0.1.0.** A cask is the right
-  *type* for proprietary binary-only software, but acceptance requires
-  (a) macOS artifacts that pass Gatekeeper on a default configuration —
-  i.e. **Developer ID signature + notarization** — (b) public presence /
-  notability thresholds, and (c) maintainer discretion. None of these are
-  met yet.
+- **Official `homebrew/cask`: blocked for 0.1.0/0.1.1.** A cask is the
+  right *type* for proprietary binary-only software, but acceptance
+  requires (a) macOS artifacts that pass Gatekeeper on a default
+  configuration — i.e. **Developer ID signature + notarization** (an
+  ad-hoc signature, as in 0.1.1, does not qualify) — (b) public presence
+  / notability thresholds, and (c) maintainer discretion. None of these
+  are met yet.
 - **Own third-party tap: chosen route (preparation complete).** The tap
   `pauldckim/tap` (repository `pauldckim/homebrew-tap`) carries a cask
-  that installs the macOS x86_64 binary from this repository's GitHub
-  Release. One-line install:
-  `brew install --cask pauldckim/tap/ltop`. Since Homebrew 6.0.0,
+  that installs the macOS binary from this repository's GitHub Release.
+  Since 0.1.1 the cask is **architecture-aware**: it declares
+  `arch arm: "arm64", intel: "x86_64"` and per-architecture
+  `sha256 arm: …, intel: …`, and the URL and binary path interpolate
+  `#{arch}` (`ltop-v0.1.1-macos-<arch>.zip`), so the same one-line
+  install works on Apple Silicon and Intel:
+  `brew install --cask pauldckim/tap/ltop`. The 0.1.0 cask's
+  `depends_on arch: :x86_64` requirement is removed; `depends_on
+  macos: :big_sur` (11.0, the arm64 floor) is kept. Since Homebrew 6.0.0,
   non-official taps require explicit user trust: a fully-qualified
   install auto-taps the repository and trusts **only this cask**
   (cask-scoped entry in `~/.homebrew/trust.json`), not the whole tap.
-  Because the 0.1.0 binary is unsigned, the cask carries explicit
-  first-run caveats (verify the archive checksum, then remove the
-  quarantine recursively with `xattr -dr` or use System Settings →
-  Privacy & Security → "Open Anyway"); it does **not** remove the
-  quarantine automatically. Developer ID + notarization remains the
-  proper future fix (§4): once the artifacts pass Gatekeeper, the
-  caveats become unnecessary and the official `homebrew/cask` route
-  becomes realistic as well. The live cask (`Casks/ltop.rb` in the tap
-  repository) is mirrored as a reference at
-  `homebrew/Casks/ltop.rb.template` (deliberately **not** a `.rb` file,
-  so `brew` will never load it); details in `homebrew/README.md`.
+  Because the 0.1.1 binaries are ad-hoc signed but **not**
+  Developer-ID signed/notarized, the cask carries explicit first-run
+  caveats (verify the per-architecture archive checksum, then remove the
+  quarantine recursively with `xattr -dr` against
+  `$(brew --prefix)/Caskroom/ltop` — architecture-independent — or use
+  System Settings → Privacy & Security → "Open Anyway"); it does
+  **not** remove the quarantine automatically, and the caveats state
+  explicitly that ad-hoc signing is not a Developer ID signature.
+  Developer ID + notarization remains the proper future fix (§4): once
+  the artifacts pass Gatekeeper, the caveats become unnecessary and the
+  official `homebrew/cask` route becomes realistic as well. The live
+  cask (`Casks/ltop.rb` in the tap repository) is mirrored as a
+  reference at `homebrew/Casks/ltop.rb.template` (deliberately **not** a
+  `.rb` file, so `brew` will never load it); details in
+  `homebrew/README.md`.
 
 ### WinGet
 
@@ -192,8 +234,9 @@ storage and is referenced only by name in release notes.
 ### Linux
 
 Direct archive + checksums (this repository / GitHub Releases) is the
-channel. The own-tap cask is macOS x86_64 only (`depends_on
-arch: :x86_64`), so Linuxbrew users keep using the archive route;
+channel. The own-tap cask is macOS-only (arm64 + x86_64 since 0.1.1;
+0.1.0 was x86_64 only via `depends_on arch: :x86_64`), so Linuxbrew
+users keep using the archive route (the published 0.1.0 artifact);
 distro repositories are out of scope.
 
 ## 6. What is (not) in a release

@@ -9,8 +9,8 @@ its preparation is complete:
 | Tap repository | [`pauldckim/homebrew-tap`](https://github.com/pauldckim/homebrew-tap) (staged locally at `../homebrew-tap/` in the parent project) |
 | Live cask | `Casks/ltop.rb` in the tap repository |
 | Install (one line) | `brew install --cask pauldckim/tap/ltop` |
-| Platform | macOS x86_64 only (v0.1.0 ships a macOS x86_64 binary; `depends_on arch: :x86_64`) |
-| Source of the binary | the official GitHub release in **this** repository (`pauldckim/ltop-release`), pinned by SHA-256 |
+| Platform | macOS arm64 + x86_64 (v0.1.1 ships both; the cask is architecture-aware via `arch arm: "arm64", intel: "x86_64"` and per-architecture `sha256 arm: …, intel: …`; the 0.1.0 `depends_on arch: :x86_64` requirement is removed) |
+| Source of the binary | the official GitHub release in **this** repository (`pauldckim/ltop-release`), pinned by per-architecture SHA-256 |
 
 ## How the one-line install works (Homebrew ≥ 6)
 
@@ -32,17 +32,21 @@ its preparation is complete:
    install scripts — nothing is copied out of the tap and executed
    locally.
 
-## Unsigned limitation (0.1.0)
+## Ad-hoc signing limitation (0.1.1)
 
-The v0.1.0 macOS binary is **not** Developer-ID signed or notarized.
-The cask installs it anyway as a **convenience channel**: Homebrew
-applies the quarantine attribute to the download (and does not remove
-it), so the first run is blocked by Gatekeeper. The cask's `caveats`
-print the exact procedure: verify the archive checksum, then either
+The v0.1.1 macOS binaries are **ad-hoc signed** — the arm64 binary must
+carry at least an ad-hoc signature to launch on Apple Silicon (kernel
+requirement), and the x86_64 binary is ad-hoc signed for consistency —
+but they are **not** Developer-ID signed or notarized. Ad-hoc signing is
+not a trust signal: Homebrew applies the quarantine attribute to the
+download (and does not remove it), so the first run of a quarantined
+binary is blocked by Gatekeeper exactly as with the unsigned 0.1.0
+binary. The cask's `caveats` state this explicitly and print the exact
+procedure: verify the per-architecture archive checksum, then either
 remove the quarantine recursively
-(`xattr -dr com.apple.quarantine /usr/local/Caskroom/ltop`) before the
-first run, or use **System Settings → Privacy & Security → Open
-Anyway** after a blocked first run.
+(`xattr -dr com.apple.quarantine "$(brew --prefix)/Caskroom/ltop"` —
+architecture-independent) before the first run, or use **System
+Settings → Privacy & Security → Open Anyway** after a blocked first run.
 
 **Developer-ID signing + notarization remains the proper future fix**
 (see [../docs/DISTRIBUTION.md](../docs/DISTRIBUTION.md) §4): once the

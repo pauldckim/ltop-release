@@ -3,12 +3,13 @@
 ltop is a single binary. Installation = verify the archive, extract it, put
 the binary on your `PATH`. No installer, no daemon, no service.
 
-Download from the
-[v0.1.0 release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0)
-and **verify the checksum before running anything**
+Download from the official release — **macOS from the v0.1.1 release,
+Windows and Linux from the
+[v0.1.0 release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0)**
+(0.1.1 is macOS-only) — and **verify the checksum before running anything**
 ([VERIFY.md](VERIFY.md)).
 
-## macOS (x86_64)
+## macOS (arm64 and x86_64)
 
 ### Homebrew (recommended, one line)
 
@@ -19,23 +20,29 @@ brew install --cask pauldckim/tap/ltop
 The fully-qualified command does everything: it auto-taps
 `pauldckim/tap` (repository `pauldckim/homebrew-tap`) if needed and,
 under Homebrew ≥ 6, trusts **only this cask** (cask-scoped entry in
-`~/.homebrew/trust.json`, not the whole tap). Homebrew downloads the
-archive from the official release and verifies its SHA-256.
+`~/.homebrew/trust.json`, not the whole tap). The cask selects the
+archive for your machine — `ltop-v0.1.1-macos-arm64.zip` on Apple
+Silicon, `ltop-v0.1.1-macos-x86_64.zip` on Intel — downloads it from the
+official release and verifies its SHA-256.
 
-**Unsigned first run.** The 0.1.0 binary is not Developer-ID signed or
+**Blocked first run (ad-hoc signed, not Developer-ID signed).** The 0.1.1
+binaries are ad-hoc signed (the arm64 binary must carry at least an
+ad-hoc signature to launch on Apple Silicon; the x86_64 binary is ad-hoc
+signed for consistency) but are **not** Developer-ID signed or
 notarized, and the cask does not remove the macOS quarantine attribute
 for you. `brew install` prints the exact steps as caveats: verify the
 checksum of the cached download, then either
 
 ```sh
-xattr -dr com.apple.quarantine /usr/local/Caskroom/ltop   # before first run
+xattr -dr com.apple.quarantine "$(brew --prefix)/Caskroom/ltop"   # before first run
 ```
 
-or run `ltop` once (it is blocked), then open
-**System Settings → Privacy & Security** and click **Open Anyway** next
-to the ltop warning. (If `ltop` was already run once and blocked, the
-quarantine removal alone may not be enough — macOS caches the
-assessment per path; use System Settings or reboot.)
+(works on both architectures: `/usr/local/...` on Intel,
+`/opt/homebrew/...` on Apple Silicon) or run `ltop` once (it is
+blocked), then open **System Settings → Privacy & Security** and click
+**Open Anyway** next to the ltop warning. (If `ltop` was already run
+once and blocked, the quarantine removal alone may not be enough — macOS
+caches the assessment per path; use System Settings or reboot.)
 
 Uninstall: `brew uninstall --cask ltop` (plus optional
 `brew untrust --cask pauldckim/tap/ltop` and `brew untap pauldckim/tap`).
@@ -43,31 +50,50 @@ Uninstall: `brew uninstall --cask ltop` (plus optional
 ### Manual install
 
 ```sh
+# Apple Silicon (arm64)
 # 1. Verify the archive (see VERIFY.md for the expected value)
-shasum -a 256 ltop-v0.1.0-macos-x86_64.zip
+shasum -a 256 ltop-v0.1.1-macos-arm64.zip
 
 # 2. Extract and install
-unzip ltop-v0.1.0-macos-x86_64.zip
-install -m 0755 ltop-v0.1.0-macos-x86_64/ltop /usr/local/bin/ltop
+unzip ltop-v0.1.1-macos-arm64.zip
+install -m 0755 ltop-v0.1.1-macos-arm64/ltop /usr/local/bin/ltop
 
 # 3. Check
 ltop --version
 ```
 
-**Unsigned binary (0.1.0).** The macOS binary is not Developer-ID signed or
-notarized. Depending on how you obtain it, Gatekeeper may block first launch
-(e.g. a quarantined download shows "cannot be opened because the developer
-cannot be verified"). After verifying the SHA-256 checksum, you can remove
-the quarantine attribute for a binary you trust:
+```sh
+# Intel (x86_64)
+# 1. Verify the archive (see VERIFY.md for the expected value)
+shasum -a 256 ltop-v0.1.1-macos-x86_64.zip
+
+# 2. Extract and install
+unzip ltop-v0.1.1-macos-x86_64.zip
+install -m 0755 ltop-v0.1.1-macos-x86_64/ltop /usr/local/bin/ltop
+
+# 3. Check
+ltop --version
+```
+
+**Ad-hoc signed binary (0.1.1).** The macOS binaries are ad-hoc signed
+but **not** Developer-ID signed or notarized. Depending on how you obtain
+the binary, Gatekeeper may block first launch (e.g. a quarantined
+download shows "cannot be opened because the developer cannot be
+verified"). After verifying the SHA-256 checksum, you can remove the
+quarantine attribute for a binary you trust:
 
 ```sh
 xattr -d com.apple.quarantine /usr/local/bin/ltop   # or: xattr -cr <dir>
 ```
 
 Or right-click → Open once. Do this only after the checksum matches. A
-signed/notarized build is planned; see [DISTRIBUTION.md](DISTRIBUTION.md).
+Developer-ID signed/notarized build is planned; see
+[DISTRIBUTION.md](DISTRIBUTION.md).
 
-## Windows (x86_64)
+## Windows (x86_64) — 0.1.0 (current Windows release)
+
+0.1.1 is macOS-only; the published 0.1.0 Windows artifact remains the
+current Windows release.
 
 ```powershell
 # 1. Verify the archive (see VERIFY.md for the expected value)
@@ -104,7 +130,10 @@ publisher. After verifying the SHA-256 checksum, choose *More info* →
 *Run anyway* for a binary you trust. A signed build is planned; see
 [DISTRIBUTION.md](DISTRIBUTION.md).
 
-## Linux (x86_64)
+## Linux (x86_64) — 0.1.0 (current Linux release)
+
+0.1.1 is macOS-only; the published 0.1.0 Linux artifact remains the
+current Linux release.
 
 ```sh
 # 1. Verify the archive (see VERIFY.md for the expected value)

@@ -12,17 +12,23 @@
 # (see ../README.md). When the live cask changes (version bump, signing
 # status, caveats), this reference copy must be updated to match.
 #
-# Note: the v0.1.0 macOS binary is unsigned; the live cask installs it
-# anyway as a convenience channel with explicit first-run caveats.
-# Developer-ID signing + notarization remains the proper future fix
-# (see ../../docs/DISTRIBUTION.md §4 and §5).
+# Note: the v0.1.1 macOS binaries are ad-hoc signed (the arm64 binary
+# must carry at least an ad-hoc signature to launch on Apple Silicon;
+# the x86_64 binary is ad-hoc signed for consistency). Ad-hoc signing
+# is NOT a Developer ID signature: the live cask installs them anyway as
+# a convenience channel with explicit first-run caveats. Developer-ID
+# signing + notarization remains the proper future fix (see
+# ../../docs/DISTRIBUTION.md §4 and §5).
 # ===========================================================================
 
 cask "ltop" do
-  version "0.1.0"
-  sha256 "e4d60310db4f638f9cf01e182be1bc35e1b39678e0dcf9d7c260e2a84b7a5b42"
+  arch arm: "arm64", intel: "x86_64"
 
-  url "https://github.com/pauldckim/ltop-release/releases/download/v#{version}/ltop-v#{version}-macos-x86_64.zip"
+  version "0.1.1"
+  sha256 arm:   "66c97f41f4a0c9919b89f8a003366a36f8e77d79af03ec866dccb3efbaa9fa55",
+         intel: "676da4356e00813e35092c8f386daa78ee41cca09a8f033949ca452135e5bdd9"
+
+  url "https://github.com/pauldckim/ltop-release/releases/download/v#{version}/ltop-v#{version}-macos-#{arch}.zip"
   name "ltop"
   desc "Single-binary TUI monitor for llama.cpp llama-server and its local process"
   homepage "https://github.com/pauldckim/ltop-release"
@@ -32,14 +38,14 @@ cask "ltop" do
     strategy :github_latest
   end
 
-  depends_on arch: :x86_64
-  # Oldest macOS Homebrew 6 can express; the binary's Mach-O minimum is
-  # 10.12 (LC_VERSION_MIN_MACOSX), so 11 is a safe lower bound.
+  # 0.1.1 ships both Apple architectures, so the 0.1.0
+  # `depends_on arch: :x86_64` is removed. 11.0 (Big Sur) is the
+  # arm64 macOS floor and the oldest macOS Homebrew 6 can express.
   depends_on macos: :big_sur
 
-  # The release archive contains a single top-level directory with the
-  # binary nested inside; reference it by that path.
-  binary "ltop-v#{version}-macos-x86_64/ltop"
+  # The release archive contains a single top-level directory with
+  # the binary nested inside; reference it by that path.
+  binary "ltop-v#{version}-macos-#{arch}/ltop"
 
   caveats <<~EOS
     ltop is distributed under a proprietary freeware license (see
@@ -47,22 +53,29 @@ cask "ltop" do
     to use and to redistribute unmodified; no sale, no modification, no
     reverse engineering. The source code is not published.
 
-    The v0.1.0 macOS binary is NOT Developer-ID signed or notarized, and
-    this cask does not remove the macOS quarantine attribute for you.
-    The first run of `ltop` will be blocked by Gatekeeper.
+    The v0.1.1 macOS binaries are ad-hoc signed: the arm64 binary must
+    carry at least an ad-hoc signature to launch on Apple Silicon, and
+    the x86_64 binary is ad-hoc signed for consistency. Ad-hoc signing
+    is NOT a Developer ID signature — the binaries are not Developer-ID
+    signed or notarized, and this cask does not remove the macOS
+    quarantine attribute for you. The first run of `ltop` will be
+    blocked by Gatekeeper.
 
     Before unblocking it, verify the checksum of the downloaded archive
     (Homebrew already verified this SHA-256 during install; to re-check
     the cached download):
 
-      shasum -a 256 "$HOME/Library/Caches/Homebrew/downloads/"*--ltop-v0.1.0-macos-x86_64.zip
-      # expected: e4d60310db4f638f9cf01e182be1bc35e1b39678e0dcf9d7c260e2a84b7a5b42
+      shasum -a 256 "$HOME/Library/Caches/Homebrew/downloads/"*--ltop-v0.1.1-macos-*.zip
+      # expected (Apple Silicon / arm64):
+      #   66c97f41f4a0c9919b89f8a003366a36f8e77d79af03ec866dccb3efbaa9fa55
+      # expected (Intel / x86_64):
+      #   676da4356e00813e35092c8f386daa78ee41cca09a8f033949ca452135e5bdd9
 
     Then unblock the binary by either:
 
       1. removing the quarantine attribute recursively, before the
          first run:
-         xattr -dr com.apple.quarantine /usr/local/Caskroom/ltop
+         xattr -dr com.apple.quarantine "$(brew --prefix)/Caskroom/ltop"
 
       2. or running `ltop` once (it will be blocked), then opening
          System Settings > Privacy & Security and clicking "Open Anyway"

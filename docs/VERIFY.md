@@ -2,6 +2,14 @@
 
 ## Current status (read this first)
 
+**v0.1.1 is staged (2026-09-06); publication pending.** v0.1.1 adds
+macOS arm64 (Apple Silicon) and rebuilds macOS x86_64 at the new version;
+it is **macOS-only** — the published v0.1.0 Windows and Linux artifacts
+remain the current release for those platforms. The v0.1.1 checksums are
+pinned below and in `releases/v0.1.1/SHA256SUMS`; the archives will be
+attached to the `v0.1.1` GitHub Release (the release assets are never
+modified in place after publication).
+
 **v0.1.0 was published on 2026-09-06.** Download the archives and
 `SHA256SUMS` from the
 [GitHub Release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0).
@@ -18,6 +26,39 @@ superseded). See [DISTRIBUTION.md](DISTRIBUTION.md) §1 and §3.
 ## Checksums
 
 Verify the archive you downloaded **before** running it.
+
+### v0.1.1 (staged 2026-09-06; macOS only)
+
+| Artifact | SHA-256 |
+|---|---|
+| `ltop-v0.1.1-macos-arm64.zip` | `66c97f41f4a0c9919b89f8a003366a36f8e77d79af03ec866dccb3efbaa9fa55` |
+| `ltop-v0.1.1-macos-x86_64.zip` | `676da4356e00813e35092c8f386daa78ee41cca09a8f033949ca452135e5bdd9` |
+
+The binaries are the **final stripped, ad-hoc-signed release binaries**,
+produced on the Intel macOS VM from the verified final 0.1.1 source
+(arm64 cross-built, x86_64 rebuilt) and verified by hash before and after
+transfer, before packaging:
+
+| Binary | Size (bytes) | SHA-256 |
+|---|---|---|
+| macOS arm64 `ltop` (ad-hoc signed) | 4,554,192 | `19a6e42346f05dc37dd00f9ff723408d870237b72dc7a9cd77245069f443401a` |
+| macOS x86_64 `ltop` (ad-hoc signed) | 4,795,968 | `00933d50ef9ca133d788f0a1d883f1ab71dd0acacfc6cf9eb0c2b89c4fba6cbd` |
+
+**Binary quality (0.1.1):** same as 0.1.0 — **stripped** (macOS `strip`)
+and built with the build machine's home directory remapped to a neutral
+prefix (`--remap-path-prefix`), so **no build-machine paths** are embedded
+(machine-path byte scan: zero occurrences in both binaries). Both link
+only the 5 macOS system dylibs/frameworks. The arm64 binary is built with
+default `aarch64-apple-darwin` codegen (rustc default CPU `apple-m1`, the
+M1–M5 baseline; no `target-cpu`/`target-feature` overrides) and
+`MACOSX_DEPLOYMENT_TARGET=11.0` (`otool -l`: `LC_BUILD_VERSION`, minos
+11.0.0, platform MACOS) — it runs on every Apple Silicon Mac. The x86_64
+binary keeps the 0.1.0 Mach-O minimum (10.12, `LC_VERSION_MIN_MACOSX`), so
+the 0.1.0 → 0.1.1 x86_64 delta is the version string plus the ad-hoc
+signature (see "Signature status (0.1.1)" below).
+
+These values are recorded in `releases/v0.1.1/SHA256SUMS` (tracked); each
+archive's `README.txt` carries its binary's hash.
 
 ### v0.1.0 (2026-09-05; repackaged 2026-09-06 with stripped binaries)
 
@@ -90,6 +131,26 @@ sh ../../scripts/verify-release.sh SHA256SUMS
 .\scripts\verify-release.ps1 -SumsFile .\dist\v0.1.0\SHA256SUMS
 ```
 
+## Signature status (0.1.1)
+
+**The 0.1.1 macOS binaries are ad-hoc signed** (`codesign -dv` shows
+`Signature=adhoc`, `flags=0x2(adhoc)`). Per architecture:
+
+| Binary | Signing | Why |
+|---|---|---|
+| macOS arm64 | ad-hoc signed | **required**: on Apple Silicon every executable must carry at least an ad-hoc signature to launch (an unsigned arm64 binary is killed at launch) |
+| macOS x86_64 | ad-hoc signed | for consistency with the arm64 artifact (x86_64 can launch unsigned; the 0.1.0 x86_64 binary was unsigned) |
+
+**Ad-hoc signing is NOT a Developer ID signature.** Neither binary is
+Developer-ID signed or notarized, and an ad-hoc signature does not satisfy
+Gatekeeper for quarantined items: a quarantined first run (browser or
+Homebrew download) is still blocked exactly like the unsigned 0.1.0
+binaries. Verify the SHA-256 checksum first, then use the unblock
+procedure in [INSTALL.md](INSTALL.md) (recursive `xattr -dr` before first
+run, or System Settings → Privacy & Security → "Open Anyway"). Developer
+ID + notarization remains the planned proper fix (§ "Signature status
+(0.1.0)" / [DISTRIBUTION.md](DISTRIBUTION.md) §4).
+
 ## Signature status (0.1.0)
 
 **The 0.1.0 binaries are unsigned.** There is no code signature and no
@@ -126,6 +187,43 @@ signing work.
 
 ## What is verified today
 
+**v0.1.1 (staged 2026-09-06):**
+
+- SHA-256 checksums of both staged archives (this file +
+  `releases/v0.1.1/SHA256SUMS`), and of the binaries inside them
+  (verified on the build VM before transfer, after transfer, and after
+  extraction from both archives).
+- Binary quality: both binaries stripped, machine-path byte scan with
+  zero occurrences, exactly the 5 macOS system dylibs/frameworks,
+  `ltop --version` → `ltop 0.1.1` (exit 0), ad-hoc signature verified
+  (`codesign -dv` → `Signature=adhoc`), arm64 deployment target minos
+  11.0.0 (`LC_BUILD_VERSION`, platform MACOS).
+- The archives contain exactly: the binary, `LICENSE.md`,
+  `THIRD_PARTY_NOTICES.md`, `README.txt` — nothing else.
+- Deterministic packaging: a second packaging run from the same inputs
+  produced byte-identical archives (fixed 2026-09-06 UTC timestamps,
+  sorted entries, zeroed owners).
+- Extracted-archive runs: the x86_64 archive binary was run
+  end-to-end through the Homebrew cask install path on the Intel macOS
+  VM (download from a local server, SHA-256 verified by Homebrew,
+  quarantine set, blocked first run, `xattr -dr` unblock, `--version`,
+  PTY `q` smoke, clean uninstall) and directly on the author host
+  (`--version` + PTY `q` smoke); the arm64 archive binary was extracted
+  and run on the Apple Silicon certification host (`--version` + PTY
+  `q` smoke, hash match with the build VM).
+- Homebrew cask (0.1.1): per-architecture URL/checksum selection
+  verified by definition-level checks (`brew style`, `brew audit`,
+  `brew info`) and stub-DSL evaluation for both simulated architectures;
+  the intel branch installed end-to-end from local (unpublished) assets
+  on the Intel macOS VM. The arm branch's *artifact* was verified on the
+  Apple Silicon host by direct extraction/run; a full arm-branch
+  `brew install` requires Homebrew on that host (not installed —
+  non-admin machine) and is recorded N/A with that reason.
+- Certification on Apple Silicon: the full 33-gate live certification
+  passed on the M4 Max (see "Certification (0.1.1)" below).
+
+**v0.1.0 (published 2026-09-06):**
+
 - SHA-256 checksums of every published archive (this file +
   `releases/v0.1.0/SHA256SUMS` + `dist/v0.1.0/SHA256SUMS`), and of the
   binaries inside them.
@@ -156,6 +254,66 @@ signing work.
 `v0.1.0` GitHub Release. GitHub's reported asset digests match the tracked
 manifest, and independently downloaded assets passed `SHA256SUMS` in full.
 Published assets are never modified in place; changes require a new release.
+
+## Certification (0.1.1, sanitized summary)
+
+The 0.1.1 artifacts were built and certified on 2026-09-06. This is the
+durable sanitized summary; the machine-local reports are not published
+(same policy as the 0.1.0 records: no internal host names, internal
+IPs, machine-local paths, or report file names in this repository).
+
+**Build (Intel macOS VM, macOS 26.6.2 x86_64):**
+
+- Toolchain: rustc 1.98.0 (pinned via rustup, the 0.1.0 baseline
+  compiler), targets `x86_64-apple-darwin` + `aarch64-apple-darwin`,
+  Apple Command Line Tools SDK 26.5 (universal linker).
+- Gates on the VM (host x86_64): `cargo fmt --check`,
+  `cargo check --all-targets`, `cargo clippy --all-targets -- -D
+  warnings`, `cargo test` — **384 tests, 0 failed**; Python suites
+  `tests/cert` **62 OK**, `tests/scripts` **79 OK**; cross
+  `cargo check --target aarch64-apple-darwin` PASS.
+- arm64 cross-built with default `aarch64-apple-darwin` codegen (CPU
+  `apple-m1`, the M1–M5 baseline; no `target-cpu`/`target-feature`
+  overrides) and `MACOSX_DEPLOYMENT_TARGET=11.0`; x86_64 rebuilt at
+  0.1.1 with the identical procedure. Build-home path remap + strip;
+  the arm64 binary ad-hoc signed (kernel launch requirement), the
+  x86_64 binary ad-hoc signed for consistency (post-sign re-verification:
+  `--version`, PTY `q` smoke, linkage, machine-path scan — all PASS).
+
+**Certification (Apple M4 Max, macOS 26.6.2 arm64):**
+
+- Binary identity: transferred arm64 binary hash matched the build VM
+  (`19a6e423…`), `file` → Mach-O arm64, minos 11.0.0, the 5 system
+  dylibs, `Signature=adhoc`, `ltop --version` → `ltop 0.1.1`.
+- Native gates on the M4: `cargo fmt --check`, `cargo check
+  --all-targets`, `cargo clippy --all-targets -- -D warnings`,
+  `cargo test` — **384 tests, 0 failed** (native arm64 run of the full
+  deterministic suite, including the Ratatui `TestBackend` dashboard
+  tests); Python certification suite **62 OK**; real-PTY `q` smoke PASS.
+- **Full 33-gate live certification: 33/33 gates PASS** (0 FAIL /
+  0 SKIPPED / 0 N-A), against a real llama-server (pinned commit
+  `427291b`, CPU-only static build, GPU off) with the pinned model
+  (`Qwen3-4B-Q4_K_M.gguf`, 2,497,280,256 bytes, sha256
+  `7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5` —
+  hash matched), covering the live `/props`/`/slots`/`/metrics` schemas,
+  the live-stream inference semantics, all TUI key/resize/restart/
+  remote-semantics gates, terminal restoration on `q`/Ctrl-C, and a
+  300 s soak (59 completions, no panic, RSS bounded 13,520 → 13,888 KiB,
+  clean exit, no leftover processes).
+
+**Homebrew cask (0.1.1):** definition-level checks (`brew style`,
+`brew audit`, `brew info`) PASS on the Intel macOS VM (Homebrew 6.0.22);
+per-architecture URL/checksum/binary resolution verified by stub-DSL
+evaluation for both simulated architectures (and on the M4 itself); the
+intel branch installed end-to-end from local unpublished assets (local
+server URL) on the Intel VM — download, SHA-256 verified by Homebrew,
+quarantine set, blocked quarantined first run, recursive `xattr -dr`
+unblock, `ltop 0.1.1`, PTY `q` smoke, clean uninstall with no residue.
+`brew livecheck` resolves the latest published release (v0.1.0 until the
+v0.1.1 release is published — expected, not a defect). A full
+arm-branch `brew install` on the M4 is **N/A** (Homebrew is not
+installed on that non-admin machine); the arm64 *artifact* is fully
+certified as above.
 
 ## Screenshot validation (genuine Terminal captures)
 

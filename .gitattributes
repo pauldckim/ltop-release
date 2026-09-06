@@ -9,3 +9,11 @@ third-party/licenses/** whitespace=-trailing-space
 *.ps1 text eol=crlf
 *.template text eol=lf
 SHA256SUMS text eol=lf
+
+# The verbatim license blocks in THIRD_PARTY_NOTICES.md contain CRLF line
+# endings that are part of the byte-verified record (the published 0.1.0
+# archives carry them; the 0.1.1 archives must match). Placed after the
+# `*.md` rule (last match wins) so `-text` disables the `eol=lf`
+# normalization and the tracked file stays byte-identical to the archive
+# contents.
+THIRD_PARTY_NOTICES.md -text

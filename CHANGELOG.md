@@ -2,6 +2,73 @@
 
 All notable public changes to ltop releases are recorded here.
 
+## 0.1.1 — 2026-09-06 (staged; publication pending)
+
+**Adds Apple Silicon (arm64) support for all M1–M5 Macs** and rebuilds
+the macOS x86_64 artifact at the new version. No product behavior
+changes: the Rust source delta is the version bump only (plus a
+test-only Python-compatibility change in the certification scripts,
+which is not shipped in the binaries). 0.1.1 is macOS-only:
+the published 0.1.0 Windows and Linux assets remain the current release
+for those platforms and are unchanged.
+
+### Platforms
+
+| Platform | Artifact | Notes |
+|---|---|---|
+| macOS arm64 (Apple Silicon) | `ltop-v0.1.1-macos-arm64.zip` | **new** — one generic `aarch64-apple-darwin` target covers M1–M5: default rustc codegen (CPU `apple-m1`, the Apple Silicon baseline; no `target-cpu`/`target-feature` overrides, never `native`), `MACOSX_DEPLOYMENT_TARGET=11.0` (Big Sur — the arm64 floor, so the binary runs on every Apple Silicon Mac). **Ad-hoc signed** (required for arm64 launch). |
+| macOS x86_64 (Intel) | `ltop-v0.1.1-macos-x86_64.zip` | rebuilt at 0.1.1 with the identical procedure (path remap + strip + ad-hoc sign); **ad-hoc signed** for consistency with the arm64 artifact |
+| Windows x86_64 | `ltop-v0.1.0-windows-x86_64.zip` | unchanged — the published 0.1.0 asset remains the current Windows release |
+| Linux x86_64 | `ltop-v0.1.0-linux-x86_64.tar.gz` | unchanged — the published 0.1.0 asset remains the current Linux release |
+
+### Signing status (0.1.1)
+
+Both 0.1.1 macOS binaries are **ad-hoc signed** (`codesign -dv` shows
+`Signature=adhoc`). The arm64 binary must carry at least an ad-hoc
+signature to launch on Apple Silicon (an unsigned arm64 binary is killed
+at launch); the x86_64 binary is ad-hoc signed for consistency. **Ad-hoc
+signing is not a Developer ID signature:** neither binary is
+Developer-ID signed or notarized, so a quarantined first run (e.g. a
+browser or Homebrew download) is still blocked by Gatekeeper — verify
+the SHA-256 checksum first, then follow the unblock procedure in
+[docs/INSTALL.md](docs/INSTALL.md) / [docs/VERIFY.md](docs/VERIFY.md).
+Developer ID + notarization remains the planned proper fix.
+
+### Certification
+
+- **macOS arm64:** certified on an Apple M4 Max (macOS 26.6.2, arm64)
+  with the full 33-gate live certification — **33/33 gates PASS**
+  (0 FAIL / 0 SKIPPED / 0 N-A), including a real llama-server (pinned
+  commit, CPU-only build) with the pinned model, the full TUI key/resize/
+  restart/remote-semantics gates, and a 300 s soak (59 completions,
+  bounded RSS growth, clean exit, no leftover processes). The native
+  cargo gates (384 tests) and the Python certification suite (62 tests)
+  also pass on the M4. Sanitized summary:
+  [docs/VERIFY.md](docs/VERIFY.md) § "Certification (0.1.1)".
+- **macOS x86_64:** built and gated on the same Intel macOS VM as the
+  arm64 cross-build (384 cargo tests + Python suites); the stripped,
+  ad-hoc-signed binary is re-verified after signing (`--version`, PTY
+  `q` smoke, system-library linkage, machine-path scan) and the
+  extracted release archive is installed and run end-to-end through the
+  Homebrew cask path on the Intel VM.
+- The 0.1.0 certification records (author host, Intel macOS VM 33/33,
+  Windows VM) remain the durable evidence for the 0.1.0 artifacts.
+
+### Packaging
+
+- Same deterministic packaging as 0.1.0: one top-level directory per
+  archive (`ltop-v0.1.1-macos-arm64/`, `ltop-v0.1.1-macos-x86_64/`)
+  containing exactly the binary, `LICENSE.md`, `THIRD_PARTY_NOTICES.md`,
+  `README.txt`; fixed timestamps (2026-09-06 UTC), sorted entries, zeroed
+  owners; a second packaging run produced byte-identical archives.
+- `THIRD_PARTY_NOTICES.md` component inventory unchanged from 0.1.0
+  (same 299-package dependency lock); the SBOM is regenerated for 0.1.1
+  at [`sbom/ltop-v0.1.1.cdx.json`](sbom/ltop-v0.1.1.cdx.json).
+- Homebrew own-tap cask (`pauldckim/tap`) updated to 0.1.1 with
+  per-architecture URL/checksum selection (`arch arm: "arm64",
+  intel: "x86_64"`); the 0.1.0 x86_64-only architecture requirement is
+  removed. See [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) §5.
+
 ## 0.1.0 — 2026-09-05
 
 First public release. Single-binary, keyboard-only TUI that monitors a local
