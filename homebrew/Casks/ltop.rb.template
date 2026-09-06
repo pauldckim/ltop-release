@@ -8,9 +8,9 @@
 #   live copy:  https://github.com/pauldckim/homebrew-tap
 #               (Casks/ltop.rb — tap name `pauldckim/tap`)
 #
-# The own tap is the chosen and activated-preparation Homebrew route
-# (see ../README.md). When the live cask changes (version bump, signing
-# status, caveats), this reference copy must be updated to match.
+# The own tap is the chosen and live Homebrew route (see ../README.md).
+# When the live cask changes (version bump, signing status, caveats),
+# this reference copy must be updated to match.
 #
 # Note: the v0.1.1 macOS binaries are ad-hoc signed (the arm64 binary
 # must carry at least an ad-hoc signature to launch on Apple Silicon;
