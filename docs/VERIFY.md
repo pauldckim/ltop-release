@@ -2,13 +2,14 @@
 
 ## Current status (read this first)
 
-**v0.1.1 is staged (2026-09-06); publication pending.** v0.1.1 adds
-macOS arm64 (Apple Silicon) and rebuilds macOS x86_64 at the new version;
-it is **macOS-only** — the published v0.1.0 Windows and Linux artifacts
-remain the current release for those platforms. The v0.1.1 checksums are
-pinned below and in `releases/v0.1.1/SHA256SUMS`; the archives will be
-attached to the `v0.1.1` GitHub Release (the release assets are never
-modified in place after publication).
+**v0.1.1 was published on 2026-09-06.** v0.1.1 adds macOS arm64
+(Apple Silicon) and rebuilds macOS x86_64 at the new version; it is
+**macOS-only** — the published v0.1.0 Windows and Linux artifacts
+remain the current release for those platforms. The v0.1.1 checksums
+are pinned below and in `releases/v0.1.1/SHA256SUMS`; the archives are
+attached to the
+[v0.1.1 GitHub Release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.1).
+The release assets are never modified in place after publication.
 
 **v0.1.0 was published on 2026-09-06.** Download the archives and
 `SHA256SUMS` from the
@@ -27,7 +28,7 @@ superseded). See [DISTRIBUTION.md](DISTRIBUTION.md) §1 and §3.
 
 Verify the archive you downloaded **before** running it.
 
-### v0.1.1 (staged 2026-09-06; macOS only)
+### v0.1.1 (published 2026-09-06; macOS only)
 
 | Artifact | SHA-256 |
 |---|---|
@@ -187,9 +188,9 @@ signing work.
 
 ## What is verified today
 
-**v0.1.1 (staged 2026-09-06):**
+**v0.1.1 (published 2026-09-06):**
 
-- SHA-256 checksums of both staged archives (this file +
+- SHA-256 checksums of both published archives (this file +
   `releases/v0.1.1/SHA256SUMS`), and of the binaries inside them
   (verified on the build VM before transfer, after transfer, and after
   extraction from both archives).
@@ -214,11 +215,11 @@ signing work.
 - Homebrew cask (0.1.1): per-architecture URL/checksum selection
   verified by definition-level checks (`brew style`, `brew audit`,
   `brew info`) and stub-DSL evaluation for both simulated architectures;
-  the intel branch installed end-to-end from local (unpublished) assets
-  on the Intel macOS VM. The arm branch's *artifact* was verified on the
-  Apple Silicon host by direct extraction/run; a full arm-branch
-  `brew install` requires Homebrew on that host (not installed —
-  non-admin machine) and is recorded N/A with that reason.
+  the intel branch installed end-to-end from local assets before
+  publication on the Intel macOS VM. The arm branch's *artifact* was
+  verified on the Apple Silicon host by direct extraction/run; a full
+  arm-branch `brew install` requires Homebrew on that host (not
+  installed — non-admin machine) and is recorded N/A with that reason.
 - Certification on Apple Silicon: the full 33-gate live certification
   passed on the M4 Max (see "Certification (0.1.1)" below).
 
@@ -251,8 +252,10 @@ signing work.
   captures; see the capture procedure and validation table below.
 
 **Published verification:** the archives and `SHA256SUMS` are assets of the
-`v0.1.0` GitHub Release. GitHub's reported asset digests match the tracked
-manifest, and independently downloaded assets passed `SHA256SUMS` in full.
+`v0.1.0` and `v0.1.1` GitHub Releases. For both releases GitHub's reported
+asset digests match the tracked manifests
+(`releases/v0.1.0/SHA256SUMS`, `releases/v0.1.1/SHA256SUMS`), and
+independently downloaded assets passed `SHA256SUMS` in full.
 Published assets are never modified in place; changes require a new release.
 
 ## Certification (0.1.1, sanitized summary)
@@ -305,14 +308,14 @@ IPs, machine-local paths, or report file names in this repository).
 `brew audit`, `brew info`) PASS on the Intel macOS VM (Homebrew 6.0.22);
 per-architecture URL/checksum/binary resolution verified by stub-DSL
 evaluation for both simulated architectures (and on the M4 itself); the
-intel branch installed end-to-end from local unpublished assets (local
-server URL) on the Intel VM — download, SHA-256 verified by Homebrew,
-quarantine set, blocked quarantined first run, recursive `xattr -dr`
-unblock, `ltop 0.1.1`, PTY `q` smoke, clean uninstall with no residue.
-`brew livecheck` resolves the latest published release (v0.1.0 until the
-v0.1.1 release is published — expected, not a defect). A full
-arm-branch `brew install` on the M4 is **N/A** (Homebrew is not
-installed on that non-admin machine); the arm64 *artifact* is fully
+intel branch installed end-to-end from local assets (local server URL) on
+the Intel VM before the v0.1.1 release was published — download,
+SHA-256 verified by Homebrew, quarantine set, blocked quarantined first
+run, recursive `xattr -dr` unblock, `ltop 0.1.1`, PTY `q` smoke, clean
+uninstall with no residue. `brew livecheck` resolves the latest published
+release (v0.1.1 now that the release is published). A full arm-branch
+`brew install` on the M4 is **N/A** (Homebrew is not installed on that
+non-admin machine); the arm64 *artifact* is fully
 certified as above.
 
 ## Screenshot validation (genuine Terminal captures)

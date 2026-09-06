@@ -11,9 +11,10 @@ Grafana required.
 - **License:** proprietary freeware (see [LICENSE.md](LICENSE.md)). The
   **source code is not distributed** and is not available from the
   distributor.
-- **Current release:** v0.1.1 (staged 2026-09-06; publication pending) —
-  adds macOS arm64 (Apple Silicon) and rebuilds macOS x86_64 at the new
-  version; release assets are pinned in
+- **Current release:**
+  [v0.1.1](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.1)
+  (published 2026-09-06) — adds macOS arm64 (Apple Silicon) and rebuilds
+  macOS x86_64 at the new version; release assets are pinned in
   [`releases/v0.1.1/SHA256SUMS`](releases/v0.1.1/SHA256SUMS); see
   [docs/VERIFY.md](docs/VERIFY.md) for verification instructions.
 - **Published releases:** [v0.1.0](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0)

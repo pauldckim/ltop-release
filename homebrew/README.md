@@ -1,12 +1,12 @@
-# Homebrew channel (own tap — chosen route, preparation complete)
+# Homebrew channel (own tap — chosen route, live)
 
 The **own tap** is the chosen Homebrew distribution route for ltop, and
-its preparation is complete:
+it is live (tap repository published, cask at v0.1.1):
 
 | Item | Value |
 |---|---|
 | Tap name | `pauldckim/tap` |
-| Tap repository | [`pauldckim/homebrew-tap`](https://github.com/pauldckim/homebrew-tap) (staged locally at `../homebrew-tap/` in the parent project) |
+| Tap repository | [`pauldckim/homebrew-tap`](https://github.com/pauldckim/homebrew-tap) (published; `Casks/ltop.rb` at v0.1.1) |
 | Live cask | `Casks/ltop.rb` in the tap repository |
 | Install (one line) | `brew install --cask pauldckim/tap/ltop` |
 | Platform | macOS arm64 + x86_64 (v0.1.1 ships both; the cask is architecture-aware via `arch arm: "arm64", intel: "x86_64"` and per-architecture `sha256 arm: …, intel: …`; the 0.1.0 `depends_on arch: :x86_64` requirement is removed) |

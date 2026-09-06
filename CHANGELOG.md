@@ -2,7 +2,7 @@
 
 All notable public changes to ltop releases are recorded here.
 
-## 0.1.1 — 2026-09-06 (staged; publication pending)
+## 0.1.1 — 2026-09-06 (published)
 
 **Adds Apple Silicon (arm64) support for all M1–M5 Macs** and rebuilds
 the macOS x86_64 artifact at the new version. No product behavior

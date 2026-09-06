@@ -104,10 +104,12 @@ Native installer formats therefore add risk without adding capability:
 > `MACOSX_DEPLOYMENT_TARGET=11.0`) and `macos-x86_64` (rebuilt on the
 > same VM) with the ad-hoc signing step of §4; the Windows and Linux
 > 0.1.0 artifacts were not touched and remain the current release for
-> those platforms. Step 8 (tag + GitHub Release) is **pending** — the
-> staged assets are pinned in `releases/v0.1.1/SHA256SUMS` and the
-> cask/template/docs are updated, but the tag and release are created
-> only after final verification. The packaging script
+> those platforms. Step 8 (tag + GitHub Release) was **completed** on
+> 2026-09-06: the `v0.1.1` tag and the
+> [GitHub Release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.1)
+> carry the two archives + `SHA256SUMS` (pinned in
+> `releases/v0.1.1/SHA256SUMS`), and the cask/template/docs were updated.
+> The packaging script
 > (`scripts/package-release.sh`) gained `macos-arm64` support with
 > target attributes derived from the target name (binary name, archive
 > extension, platform line) instead of a hardcoded target list.
@@ -174,7 +176,7 @@ storage and is referenced only by name in release notes.
   ad-hoc signature, as in 0.1.1, does not qualify) — (b) public presence
   / notability thresholds, and (c) maintainer discretion. None of these
   are met yet.
-- **Own third-party tap: chosen route (preparation complete).** The tap
+- **Own third-party tap: chosen route (live).** The tap
   `pauldckim/tap` (repository `pauldckim/homebrew-tap`) carries a cask
   that installs the macOS binary from this repository's GitHub Release.
   Since 0.1.1 the cask is **architecture-aware**: it declares
