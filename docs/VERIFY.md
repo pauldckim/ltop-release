@@ -144,7 +144,8 @@ signing work.
   locked packages (151 distinct texts; gaps flagged, not papered over).
 - Deterministic packaging: a second packaging run from the same inputs
   produced byte-identical archives.
-- Screenshot validation (programmatic only, see below).
+- Screenshot validation: the dashboard screenshots are genuine Terminal
+  captures; see the capture procedure and validation table below.
 
 **Publishing (intended, not yet done):** when the release is published, the
 archives + `SHA256SUMS` become assets of the immutable `v0.1.0` GitHub
@@ -152,23 +153,54 @@ Release and are never modified in place (see the policy at the top of this
 file). Until then, verification is against the staged archives and the
 tracked checksum manifest.
 
-## Screenshot validation (programmatic)
+## Screenshot validation (genuine Terminal captures)
 
-The dashboard screenshots in `assets/screenshots/` are **mock renderings**
-produced by a deterministic generator (fixed 5×7 bitmap font, fixed Tokyo
-Night palette, mock data only: endpoint `http://localhost:8080`, mock PID
-4242, model `qwen3-4b-q4_k_m.gguf`). They were validated
-**programmatically only** — no visual or aesthetic review was performed:
+The dashboard screenshots in `assets/screenshots/` are **genuine screen
+captures of ltop 0.1.0 running in macOS Terminal.app** — not synthetic
+renderings. Capture setup (2026-09-06):
+
+- **Terminal:** macOS Terminal.app 2.14 on the capture host. Temporary
+  profiles were created for the capture (Menlo 13, opaque dark
+  background, exact 80×24 and 120×40 grids, neutral custom title) and
+  deleted afterwards; the host's existing Terminal windows and profiles
+  were verified back to their original state after the capture (one
+  pre-existing window was transiently re-profiled during setup and
+  restored). The host's Terminal predates truecolor support, so
+  ltop renders the Tokyo Night palette quantized to xterm-256 colors
+  (background RGB 28,28,28, foreground 175,215,255, muted 95,95,135,
+  primary 135,175,255, secondary 175,135,255).
+- **Server data:** a Python stdlib mock llama-server bound to
+  `127.0.0.1:8081` only (loopback; the host's real llama-server on port
+  8080 was not touched) served stable mock `/metrics` and `/props`
+  (model `qwen3-4b-q4_k_m.gguf`, context 32,768, 2 slots, build
+  `b4923 (427291b)`) and dynamic `/slots` (slot 0 processing with its
+  current-task token count advancing per poll), so ltop reached
+  `connected` and displayed a live generation rate and live context
+  usage. The mock's request log (steady 1 request/s per endpoint during
+  each capture, with the captured frame bracketed by two consecutive
+  samples) is the polling-cycle evidence.
+- **Process metrics:** ltop was started with `--endpoint
+  http://127.0.0.1:8081 --pid <worker>` where the worker is a controlled
+  local `sleep` process. CPU, memory, PID and uptime in the images are
+  **real capture-host measurements of that worker**; its ephemeral PID is
+  shown as rendered (a measurement, not a secret), and macOS VIRT and
+  thread count are N/A by design. No factual field was image-edited.
+- **Capture:** each window was captured with `screencapture
+  -l<windowID>` (the actual window ID) after at least two polling cycles,
+  then cropped to the exact terminal content rectangle (title bar and
+  desktop excluded) using measured grid geometry. No image editing of
+  content was performed.
+
+Validation performed:
 
 | Check | Result |
 |---|---|
-| PNG signature, per-chunk CRCs, IHDR/IDAT/IEND order | PASS (2/2) |
-| Dimensions: 1440×576 (80×24 char grid at 18×24 px/cell) and 2160×960 (120×40) | PASS (2/2) |
-| 8-bit RGB, non-interlaced; decoded pixel buffer size consistent with IHDR | PASS (2/2) |
-| Non-uniform pixels: 10 distinct colors; background (RGB 26,27,38) is exactly 501,480/829,440 (60.4601%) of pixels in the 80×24 image and 1,356,543/2,073,600 (65.4197%) in the 120×40 image | PASS (2/2) |
-| Byte-identical to a fresh deterministic regeneration — proves the content is exactly the mock grid described above (mock-only data) | PASS (2/2) |
+| PNG signature, per-chunk CRCs, IHDR/IDAT/IEND order, 8-bit RGB, non-interlaced | PASS (2/2) |
+| Dimensions: 1280×816 (80×24 char grid at 16×34 px/cell) and 1920×1360 (120×40) | PASS (2/2) |
+| Grid geometry: panel border glyphs measured at exact cell centers (cell width 16.0 px, line height 34.0 px); content top/bottom span exactly 24/40 lines | PASS (2/2) |
+| Cell-by-cell pixel ↔ text match against the terminal's own text buffer (read at the same instant): 1,910/1,910 checked cells (80×24) and 4,794/4,794 checked cells (120×40); the handful of cells whose digits advanced during the capture were exempted and are the only difference between the two text reads | PASS (2/2) |
+| Palette: only the xterm-256-quantized Tokyo Night colors above (plus antialiasing blends of them) | PASS (2/2) |
+| Content: `connected` status, all five panels (CPU/Memory/Inference/Slots/Server), live Slots/Inference values, full footer hints with right-pinned `@pauldckim` | PASS (2/2) |
+| Privacy scan of the captured text: no hostnames, no machine-local paths, no non-loopback IPs, no port 8080; only `127.0.0.1:8081` and the worker's ephemeral PID (documented capture-host measurements) | PASS (2/2) |
 
-Known renderer property: the inter-cell gap (one column/row of the 6×8
-pixel cell grid) is rendered black (RGB 0,0,0) instead of the background
-color — exactly 13/48 of all pixels (27.0833%) in both images (224,640/
-829,440 and 561,600/2,073,600). Aesthetics were not assessed.
+Aesthetics were not assessed.

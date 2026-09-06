@@ -205,5 +205,8 @@ build scripts, private documentation, logs, internal hostnames/IPs,
 absolute machine paths, signing material. The shipped binaries are
 stripped and built with the build home remapped to a neutral prefix, so
 they embed no machine-local paths (verified by byte scan per release).
-Screenshots use mock data only (`http://localhost:8080`, mock PID, mock
-model name).
+Screenshots are genuine Terminal.app captures taken against a
+loopback-only mock llama-server endpoint (`127.0.0.1:8081`; mock model
+name `qwen3-4b-q4_k_m.gguf`) with process metrics from a controlled local
+worker process (real ephemeral PID; capture-host measurements — see
+[VERIFY.md](VERIFY.md) "Screenshot validation").

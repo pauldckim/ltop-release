@@ -22,8 +22,14 @@ Grafana required.
 |---|---|
 | ![ltop 80x24 dashboard](assets/screenshots/ltop-80x24-dashboard.png) | ![ltop wide dashboard](assets/screenshots/ltop-120x40-wide.png) |
 
-*Mock data: endpoint `http://localhost:8080`, mock PID 4242, model
-`qwen3-4b-q4_k_m.gguf`.*
+*Genuine captures of ltop 0.1.0 running in macOS Terminal.app (Menlo 13,
+exact 80×24 and 120×40 grids) against a loopback-only mock llama-server at
+`http://127.0.0.1:8081` (mock `/metrics`, `/props` and dynamic `/slots`:
+model `qwen3-4b-q4_k_m.gguf`, context 32,768, 2 slots, a live generation
+in flight). CPU, memory, PID and uptime are real measurements of a
+controlled local worker process on the capture host — its ephemeral PID is
+shown as rendered; on macOS VIRT and thread count are N/A by design.
+See [docs/VERIFY.md](docs/VERIFY.md) for the capture procedure.*
 
 ## Features
 
@@ -197,7 +203,8 @@ third-party/licenses/   canonical SPDX license texts (supplemental)
 sbom/                   CycloneDX SBOM (generated from the dependency lock)
 releases/<ver>/SHA256SUMS  tracked checksum manifest per release
 docs/                   INSTALL, VERIFY, SECURITY, DISTRIBUTION
-assets/screenshots/     dashboard screenshots (mock renderings)
+assets/screenshots/     dashboard screenshots (real Terminal captures
+                        against a local mock server)
 homebrew/               Homebrew cask template (disabled until signed)
 winget/                 WinGet manifest template (disabled until published/signed)
 scripts/                public-safe packaging + checksum verification helpers
