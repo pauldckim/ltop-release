@@ -131,7 +131,7 @@ sh scripts/tests/test-install.sh
 
 | Script | Purpose |
 |---|---|
-| `install.sh` (repo root) | one-line installer, tag-pinned at `install-v1` (§5.1) |
+| `install.sh` (repo root) | one-line installer, tag-pinned at `install-v2` (§5.1) |
 | `scripts/verify-release.sh` / `verify-release.ps1` | verify a `SHA256SUMS` file against local archives (macOS/Linux, Windows) |
 | `scripts/package-release.sh` | package prebuilt binaries into deterministic release archives |
 | `scripts/release-check.sh` | pre-publish gate: checksums, archive shape, cask mirror, SBOM, changelog, forbidden-content scan, tag state |
@@ -293,21 +293,23 @@ storage and is referenced only by name in release notes.
   signing status), so the mirror cannot drift and no stale signing note
   can remain in the template header (§3.1).
 
-### One-line installer (tag `install-v1`)
+### One-line installer (tag `install-v2`)
 
 `install.sh` (repository root) is the curl|sh channel for macOS
 (arm64/x86_64) and Linux (x86_64). It is published on its own **installer
-channel tag** `install-v1` — deliberately *not* a product `vX.Y.Z` tag:
+channel tag** `install-v2` (current; `install-v1` is superseded but
+remains published and immutable) — deliberately *not* a product
+`vX.Y.Z` tag:
 
 - **Why a separate tag:** the product tags (`v0.1.0`, `v0.1.1`) are the
   immutable release tags (I1) and predate the installer; the installer
   pins the *current* artifact per platform (macOS → v0.1.1, Linux →
   v0.1.0) and must be updatable when a new platform version becomes
   current without touching any product tag or release asset.
-- **Immutability:** once `install-v1` is pushed it is never moved or
-  mutated. A changed installer ships as a new channel tag (`install-v2`,
-  …) and the README/INSTALL one-liner is repointed in a follow-up commit;
-  the old tag keeps working for users who already copied it.
+- **Immutability:** once a channel tag is pushed it is never moved or
+  mutated. `install-v1` keeps working for users who already copied it.
+  A changed installer ships as the next channel tag (`install-v3`, …)
+  and the README/INSTALL one-liner is repointed in a follow-up commit.
 - **Security properties** (implemented and tested by
   `scripts/tests/test-install.sh`): HTTPS-only downloads (TLS ≥ 1.2;
   `curl` preferred, `wget` fallback) with the final URL restricted to the
@@ -320,12 +322,47 @@ channel tag** `install-v1` — deliberately *not* a product `vX.Y.Z` tag:
   without consent; `--uninstall` removes only known ltop hashes; unsafe
   prefixes rejected; macOS quarantine attribute inspected but never
   removed.
+- **install-v2 hardening (2026-09-07):**
+  - *Interrupts:* SIGINT/SIGTERM traps clean up the temporary workspace
+    and the staged file, print a clear "interrupted" message, and exit
+    with the conventional code (130/143); nothing is left
+    half-installed.
+  - *Hashing:* digests are computed from a private temp file via stdin,
+    so the hash tool never sees the original file name (no GNU
+    coreutils backslash-escaping of file names) and an unreadable file
+    fails the hash instead of yielding an empty digest; the tool's exit
+    status is preserved and the digest is validated (64 lowercase hex
+    chars).
+  - *Prefix canonicalization:* every symlink component of `--prefix` is
+    resolved (portable, no `realpath` dependency; bounded against
+    symlink loops) and the resolved path is re-checked against the
+    unsafe-prefix list, so a symlinked prefix cannot alias a write into
+    an unsafe system directory; benign aliases (e.g. `/tmp` →
+    `/private/tmp` on macOS) are resolved and used.
+  - *No downgrade:* `curl` runs with `--proto '=https'` in production,
+    which refuses any redirect hop to a non-HTTPS URL; the `wget`
+    fallback adds `--https-only` and `--secure-protocol=TLSv1_2` on
+    builds that support them and inspects every redirect hop it prints
+    (`Location:` headers) — a foreign intermediate hop is refused even
+    when the final URL is allowed. Documented limitation: a downloader
+    that exposes neither its redirect hops nor a no-downgrade flag
+    cannot be fully chain-audited; the four-hash pipeline remains the
+    binding guarantee.
+  - *Test-only platform override:* the v1 `LTOP_INSTALL_PLATFORM` hook
+    is removed (setting it is an error); the replacement
+    `LTOP_INSTALL_TEST_PLATFORM` is honored only together with
+    `LTOP_INSTALL_TEST_MANIFEST`, so a leaked platform variable alone
+    can never select a different architecture in production.
+  - *Dry-run:* `--dry-run` reports the resolved existing-target state
+    (no-op / would stop / would replace / would create) without
+    prompting or changing anything.
 - **Test-only environment hooks** (`LTOP_RELEASE_BASE_URL`,
-  `LTOP_INSTALL_PLATFORM`, `LTOP_INSTALL_INTERACTIVE`,
+  `LTOP_INSTALL_TEST_PLATFORM`, `LTOP_INSTALL_INTERACTIVE`,
   `LTOP_INSTALL_TEST_MANIFEST`) exist solely for the fixture test suite;
   they are documented in the script header and never weaken the
   production defaults (the hash pipeline runs identically in all modes,
-  and a piped script is never interactive).
+  the platform override requires the test manifest, and a piped script
+  is never interactive).
 - **Updating the mapping:** when a new product release becomes current
   for a platform, the mapping table in `install.sh` (version, archive
   name, archive/binary/`SHA256SUMS` hashes) is updated in the private

@@ -4,7 +4,12 @@
 # Tag-pinned one-line install:
 #
 #   curl --proto '=https' --tlsv1.2 -fsSL \
-#     https://raw.githubusercontent.com/pauldckim/ltop-release/install-v1/install.sh | sh
+#     https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh | sh
+#
+# This script is the `install-v2` channel. The previous channel
+# `install-v1` remains published and immutable (superseded, never moved);
+# both channels pin the same product releases (macOS v0.1.1, Linux
+# v0.1.0) — install-v2 hardens the installer itself, not the artifacts.
 #
 # What it does
 #   - detects the platform (macOS arm64/x86_64, Rosetta-aware; Linux x86_64)
@@ -30,23 +35,35 @@
 #     ltop binary (all 0.1.0/0.1.1 macOS/Linux hashes); foreign files are
 #     refused.
 #   - unsafe prefixes (filesystem root, core system directories) are
-#     rejected; the installer never escalates privileges.
+#     rejected. The check runs against the *canonical* prefix: every
+#     symlink component of --prefix is resolved (portably, without
+#     realpath) and the resolved path is re-checked, so a symlinked prefix
+#     cannot alias a write into an unsafe system directory. The installer
+#     never escalates privileges.
 #   - macOS: the installer never removes the com.apple.quarantine
 #     attribute. If the installed binary carries it, it prints
 #     checksum-first / System Settings guidance instead.
-#   - downloads are HTTPS-only; redirect targets are restricted to the
-#     base URL's host (test mode) or the GitHub release hosts (production).
+#   - downloads are HTTPS-only, with no downgrade:
+#       * curl runs with --proto '=https' in production, which refuses any
+#         redirect hop to a non-HTTPS URL;
+#       * the wget fallback enforces TLS >= 1.2 and, on builds that
+#         support it, --https-only; it also inspects every redirect hop it
+#         prints (Location: headers) and rejects the download when the
+#         final URL is not HTTPS in production.
+#     Documented limitation: a downloader that exposes neither its
+#     redirect hops nor a no-downgrade flag cannot be fully chain-audited;
+#     the four-hash pipeline remains the binding guarantee (substituted
+#     content fails verification before install).
+#   - interrupts (Ctrl-C / SIGINT, SIGTERM): the traps clean up the
+#     temporary workspace and the staged file, print a clear "interrupted"
+#     message, and exit with the conventional code (130 for SIGINT, 143
+#     for SIGTERM); nothing is ever left half-installed.
 #
 # Test-only environment hooks (documented so production defaults cannot be
 # weakened inadvertently; the hash pipeline is enforced in all modes, so a
 # base-URL override alone cannot substitute different artifacts):
 #   LTOP_RELEASE_BASE_URL   alternate download base, default:
 #                           https://github.com/pauldckim/ltop-release/releases/download
-#   LTOP_INSTALL_PLATFORM   bypass detection: macos-arm64 | macos-x86_64 |
-#                           linux-x86_64
-#   LTOP_INSTALL_INTERACTIVE=1
-#                           force the interactive prompt path (default:
-#                           prompt only when stdin is a terminal)
 #   LTOP_INSTALL_TEST_MANIFEST
 #                           path to a manifest file replacing the embedded
 #                           platform mapping (used by scripts/tests/
@@ -58,11 +75,22 @@
 #                           manifest binary hashes join the known-ltop set
 #                           used by --uninstall and the existing-file
 #                           message. Never set in production.
+#   LTOP_INSTALL_TEST_PLATFORM
+#                           bypass detection: macos-arm64 | macos-x86_64 |
+#                           linux-x86_64. TEST-ONLY: honored only when
+#                           LTOP_INSTALL_TEST_MANIFEST is set and valid, so
+#                           a leaked platform variable alone can never
+#                           select a different architecture in production.
+#   LTOP_INSTALL_INTERACTIVE=1
+#                           force the interactive prompt path (default:
+#                           prompt only when stdin is a terminal)
 #
 # Exit codes: 0 = installed / already installed / uninstalled / dry-run ok
 #             1 = runtime failure (hash mismatch, download failure,
 #                 refused replacement, unsupported platform, ...)
 #             2 = usage error
+#             130 = interrupted by SIGINT (Ctrl-C); cleaned up
+#             143 = interrupted by SIGTERM; cleaned up
 #
 # License: ltop is proprietary freeware. By installing you accept the
 # license at https://github.com/pauldckim/ltop-release/blob/main/LICENSE.md
@@ -70,7 +98,7 @@
 
 set -u
 
-INSTALLER_CHANNEL='install-v1'
+INSTALLER_CHANNEL='install-v2'
 REPO_URL='https://github.com/pauldckim/ltop-release'
 LICENSE_URL='https://github.com/pauldckim/ltop-release/blob/main/LICENSE.md'
 DEFAULT_BASE_URL='https://github.com/pauldckim/ltop-release/releases/download'
@@ -220,14 +248,18 @@ Options:
   -h, --help      show this help
 
 Behavior:
-  - downloads the pinned release archive over HTTPS only and verifies the
-    archive, the release SHA256SUMS file and the extracted binary against
-    embedded SHA-256 values before installing
+  - downloads the pinned release archive over HTTPS only (no downgrade;
+    redirect hops are host-restricted) and verifies the archive, the
+    release SHA256SUMS file and the extracted binary against embedded
+    SHA-256 values before installing
   - installs atomically (temp file + chmod 0755 + mv) to <prefix>/ltop
+  - resolves symlink components of --prefix and re-checks the resolved
+    path against the unsafe-prefix list (no alias bypass)
   - never uses sudo, never modifies shell configuration files, never
     removes the macOS quarantine attribute
   - an existing file at the target that is not the expected binary is
     replaced only with --force or after an interactive yes
+  - on Ctrl-C / SIGTERM: cleans up and exits 130 / 143
 
 Pinned artifacts (tag-pinned, immutable):
   macOS arm64    v0.1.1  ltop-v0.1.1-macos-arm64.zip
@@ -243,6 +275,25 @@ die_usage() {
     usage >&2
     exit 2
 }
+
+# ---------------------------------------------------------------------------
+# Cleanup and signal handling.
+#
+# The traps are installed before any workspace exists, so an interrupt at
+# any later point cleans up and exits with a clear message and the
+# conventional code (128 + signal number). The EXIT trap does the actual
+# cleanup; the INT/TERM traps only announce and exit, which runs the EXIT
+# trap exactly once. WORK/TMPBIN are empty until created, so cleanup is a
+# no-op early on.
+# ---------------------------------------------------------------------------
+
+cleanup() {
+    [ -n "${TMPBIN:-}" ] && rm -f -- "$TMPBIN" 2>/dev/null
+    [ -n "${WORK:-}" ] && rm -rf -- "$WORK" 2>/dev/null
+}
+trap 'cleanup' EXIT
+trap 'printf "ltop: interrupted (Ctrl-C); cleaning up — nothing was installed\n" >&2; exit 130' INT
+trap 'printf "ltop: interrupted (terminated); cleaning up — nothing was installed\n" >&2; exit 143' TERM
 
 # Test-manifest override (explicit, test-only; see header). When set, the
 # mapping functions read the synthetic fixture values instead of the
@@ -352,8 +403,31 @@ else
 fi
 
 sha256_of() {
-    # $1 = file; prints the lowercase hex SHA-256
-    $SHA256_TOOL "$1" | awk '{print $1}'
+    # $1 = file; prints the lowercase hex SHA-256; returns non-zero on any
+    # read or hashing failure.
+    # The file is copied to a private temp file and hashed via stdin, so the
+    # hash tool never sees the original file name: no GNU coreutils
+    # backslash-escaping of file names in the output line (a name containing
+    # a backslash prefixes the digest line with '\'), no path-dependent tool
+    # quirks, and an unreadable file fails the copy step here instead of
+    # producing an empty "hash" that downstream checks would misread. The
+    # tool's own exit status is preserved (checked before the awk field
+    # split), and the digest is validated as exactly 64 lowercase hex chars.
+    tf=$(mktemp "${TMPDIR:-/tmp}/ltop-sha256.XXXXXX") || return 1
+    if ! cat -- "$1" > "$tf" 2>/dev/null; then
+        rm -f -- "$tf"
+        return 1
+    fi
+    raw=$($SHA256_TOOL < "$tf" 2>/dev/null)
+    rc=$?
+    rm -f -- "$tf"
+    [ "$rc" -eq 0 ] || return 1
+    h=$(printf '%s\n' "$raw" | awk 'NR==1 {print $1}')
+    case "$h" in
+        *[!0-9a-f]*) return 1 ;;
+    esac
+    [ "${#h}" -eq 64 ] || return 1
+    printf '%s\n' "$h"
 }
 
 have_curl=0
@@ -404,11 +478,21 @@ detect_platform() {
     esac
 }
 
+# The platform override is TEST-ONLY and requires the test manifest: a
+# leaked platform variable alone must never be able to select a different
+# architecture in production (it would download and install the wrong
+# artifact for the detected machine). The removed v1 name fails loudly
+# rather than being silently ignored.
 if [ -n "${LTOP_INSTALL_PLATFORM:-}" ]; then
-    PLATFORM=$LTOP_INSTALL_PLATFORM
+    die "LTOP_INSTALL_PLATFORM is a removed v1 test hook: production runs must not set it; tests must set LTOP_INSTALL_TEST_PLATFORM together with LTOP_INSTALL_TEST_MANIFEST"
+fi
+if [ -n "${LTOP_INSTALL_TEST_PLATFORM:-}" ]; then
+    [ -n "$MANIFEST_FILE" ] ||
+        die "LTOP_INSTALL_TEST_PLATFORM is test-only and requires LTOP_INSTALL_TEST_MANIFEST (a leaked platform variable must not select the architecture in production)"
+    PLATFORM=$LTOP_INSTALL_TEST_PLATFORM
     case "$PLATFORM" in
         macos-arm64|macos-x86_64|linux-x86_64) : ;;
-        *) die "invalid LTOP_INSTALL_PLATFORM: $PLATFORM (expected macos-arm64 | macos-x86_64 | linux-x86_64)" ;;
+        *) die "invalid LTOP_INSTALL_TEST_PLATFORM: $PLATFORM (expected macos-arm64 | macos-x86_64 | linux-x86_64)" ;;
     esac
     info "platform (test override): $PLATFORM"
 else
@@ -431,7 +515,99 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Prefix validation
+# Path canonicalization (portable; no realpath / readlink -f dependency)
+# ---------------------------------------------------------------------------
+
+# Resolve the symlinks of an absolute path, component by component. The
+# path need not exist yet (the installer creates its final component).
+# Prints the canonical path; returns 1 if a symlink target cannot be read
+# or the result would escape above the filesystem root.
+canonicalize_path() {
+    _cp=$1
+    case "$_cp" in
+        /*) : ;;
+        *) return 1 ;;
+    esac
+    while [ "${_cp%/}" != "$_cp" ] && [ "$_cp" != "/" ]; do
+        _cp=${_cp%/}
+    done
+    # split into a component stack (leading-slash separated)
+    _rest=$_cp
+    _stack=''
+    while [ -n "$_rest" ]; do
+        case "$_rest" in
+            */*) _comp=${_rest%%/*}; _rest=${_rest#*/} ;;
+            *)   _comp=$_rest; _rest='' ;;
+        esac
+        case "$_comp" in
+            ''|.) ;;
+            *)   _stack="$_stack/$_comp" ;;
+        esac
+    done
+    _out=''
+    _nlinks=0
+    while [ -n "$_stack" ]; do
+        _comp=${_stack%%/*}
+        case "$_stack" in
+            */*) _stack=${_stack#*/} ;;
+            *)   _stack='' ;;
+        esac
+        [ -n "$_comp" ] || continue   # leading separator artifact
+        if [ "$_comp" = ".." ]; then
+            [ -n "$_out" ] || return 1   # would escape above the root
+            _out=${_out%/*}
+            [ -n "$_out" ] || _out='/'
+            continue
+        fi
+        case "$_out" in
+            ''|/) _cand="/$_comp" ;;
+            *)    _cand="$_out/$_comp" ;;
+        esac
+        if [ -L "$_cand" ]; then
+            # bound the resolution like the kernel does (ELOOP after 40
+            # symlinks) so a self-referential chain cannot loop forever
+            _nlinks=$((_nlinks + 1))
+            [ "$_nlinks" -le 40 ] || return 1
+            _tgt=$(readlink -- "$_cand" 2>/dev/null) || return 1
+            # splice the target's components in front of the remaining
+            # stack; a relative target stays in the link's own directory
+            # (_out), an absolute target restarts from the root
+            _tx=$_tgt
+            _pre=''
+            while [ -n "$_tx" ]; do
+                case "$_tx" in
+                    */*) _tc=${_tx%%/*}; _tx=${_tx#*/} ;;
+                    *)   _tc=$_tx; _tx='' ;;
+                esac
+                case "$_tc" in
+                    ''|.) ;;
+                    *)   _pre="$_pre/$_tc" ;;
+                esac
+            done
+            # the remaining stack may have lost its leading separator when
+            # the symlink component was popped; restore it before splicing
+            case "$_stack" in
+                ''|/*) : ;;
+                *)     _stack="/$_stack" ;;
+            esac
+            _stack="$_pre$_stack"
+            case "$_tgt" in
+                /*) _out='' ;;
+            esac
+            continue
+        fi
+        case "$_out" in
+            ''|/) _out="/$_comp" ;;
+            *)    _out="$_out/$_comp" ;;
+        esac
+    done
+    [ -n "$_out" ] || _out='/'
+    printf '%s\n' "$_out"
+}
+
+# ---------------------------------------------------------------------------
+# Prefix validation (literal + canonical, so symlinks cannot alias
+# writes into unsafe system directories)
 # ---------------------------------------------------------------------------
 
 if [ -n "$PREFIX" ]; then
@@ -448,13 +624,32 @@ else
     [ -n "${HOME:-}" ] || die 'cannot determine $HOME; pass --prefix explicitly'
 fi
 
+unsafe_prefix() {
+    case "$1" in
+        /|/bin|/sbin|/usr|/usr/bin|/usr/sbin|/usr/lib|/etc|/var|/private|/private/etc|/private/var|/System|/Library)
+            return 0 ;;
+    esac
+    return 1
+}
+
 # Unsafe prefixes are rejected outright (the installer never escalates, but
 # it must not write into core system directories even if run as root).
-case "$PREFIX" in
-    /|/bin|/sbin|/usr|/usr/bin|/usr/sbin|/usr/lib|/etc|/var|/private|/private/etc|/private/var|/System|/Library)
-        die "refusing unsafe install prefix: $PREFIX (use a user-writable directory such as \$HOME/.local/bin)"
-        ;;
-esac
+if unsafe_prefix "$PREFIX"; then
+    die "refusing unsafe install prefix: $PREFIX (use a user-writable directory such as \$HOME/.local/bin)"
+fi
+
+# Canonicalize and re-check: a symlinked prefix component that points into
+# an unsafe system directory is an alias attack and is refused; a benign
+# alias (e.g. /tmp -> /private/tmp on macOS) is resolved and used.
+PREFIX_REAL=$(canonicalize_path "$PREFIX") ||
+    die "cannot resolve the install prefix $PREFIX (unreadable symlink component?); refusing to install"
+if unsafe_prefix "$PREFIX_REAL"; then
+    die "refusing unsafe install prefix: $PREFIX resolves to $PREFIX_REAL (use a user-writable directory such as \$HOME/.local/bin)"
+fi
+if [ "$PREFIX_REAL" != "$PREFIX" ]; then
+    info "prefix $PREFIX resolves to $PREFIX_REAL (symlink); installing there"
+    PREFIX=$PREFIX_REAL
+fi
 
 TARGET="$PREFIX/ltop"
 
@@ -479,7 +674,7 @@ interactive() {
 }
 
 # ---------------------------------------------------------------------------
-# Download (HTTPS-only; final-URL host restricted)
+# Download (HTTPS-only, no downgrade; every redirect hop's host restricted)
 # ---------------------------------------------------------------------------
 
 host_of_url() {
@@ -488,6 +683,56 @@ host_of_url() {
     h=${h%%:*}
     printf '%s' "$h"
 }
+
+scheme_of_url() {
+    s=${1%%:*}
+    printf '%s' "$s"
+}
+
+# Join a possibly-relative redirect target against the URL it came from.
+url_join() {
+    # $1 = base url, $2 = target
+    case "$2" in
+        http://*|https://*) printf '%s' "$2" ;;
+        //*)                printf '%s://%s' "$(scheme_of_url "$1")" "${2#//}" ;;
+        /*)                 printf '%s://%s' "$(scheme_of_url "$1")" "$(host_of_url "$1")$2" ;;
+        *)                  printf '%s' "$1$2" ;;
+    esac
+}
+
+# Check one redirect hop (or the final URL) of a download.
+check_hop() {
+    # $1 = hop url, $2 = hop kind ("redirect hop" | "final URL")
+    case " $ALLOWED_HOSTS " in
+        *" $(host_of_url "$1") "*) : ;;
+        *)
+            die "download $2 ended at unexpected host '$(host_of_url "$1")' (allowed: $ALLOWED_HOSTS); aborting"
+            ;;
+    esac
+    case "$BASE_URL" in
+        https://*)
+            case "$1" in
+                https://*) : ;;
+                *) die "download $2 downgraded to non-HTTPS ($1); refusing" ;;
+            esac
+            ;;
+    esac
+}
+
+# wget flag support is detected once (portable across GNU wget versions and
+# busybox builds): --https-only (no http downgrade, GNU >= 1.21) and
+# --secure-protocol (minimum TLS version, GNU >= 1.15).
+WGET_HTTPS_ONLY=''
+WGET_TLS_MIN=''
+if [ "$have_wget" -eq 1 ]; then
+    _wget_help=$(wget --help 2>&1 || true)
+    case "$_wget_help" in
+        *'--https-only'*) WGET_HTTPS_ONLY='--https-only' ;;
+    esac
+    case "$_wget_help" in
+        *'--secure-protocol'*) WGET_TLS_MIN='--secure-protocol=TLSv1_2' ;;
+    esac
+fi
 
 download() {
     # $1 = url, $2 = dest
@@ -498,29 +743,58 @@ download() {
         http://*)  dl_proto='=http' ;;
     esac
     if [ "$have_curl" -eq 1 ]; then
+        # --proto '=https' (production) applies to every redirect hop as
+        # well: curl refuses to follow a hop to a non-allowed protocol, so
+        # an HTTPS -> HTTP downgrade fails the download instead of
+        # succeeding at a weaker URL.
         dl_final=$(curl -fsSL --proto "$dl_proto" --tlsv1.2 \
             --connect-timeout 15 --retry 3 --retry-delay 2 --max-time 600 \
             -o "$dl_dest" -w '%{url_effective}' "$dl_url") ||
             die "download failed: $dl_url"
     else
-        # GNU wget (and curl) print the response headers with -S; the last
-        # absolute Location: header is the final URL (wget does not expose
-        # it any other portable way). A relative Location stays on the
-        # original host, so the original URL is the conservative answer.
-        dl_hdrs=$(wget -S -q -T 15 -t 3 -O "$dl_dest" "$dl_url" 2>&1) ||
+        # wget: HTTPS-only as far as the build allows. --https-only (GNU
+        # >= 1.21) refuses http URLs and downgrades outright;
+        # --secure-protocol pins the minimum TLS version. Both apply only
+        # to HTTPS bases: with an http:// test base, --https-only would
+        # refuse the base URL itself. With -S wget prints the response
+        # headers of every hop to stderr; the Location: headers are the
+        # redirect chain.
+        case "$BASE_URL" in
+            https://*) dl_wget_flags="$WGET_HTTPS_ONLY $WGET_TLS_MIN" ;;
+            *)         dl_wget_flags='' ;;
+        esac
+        dl_hdrs=$(wget -S -q -T 15 -t 3 -O "$dl_dest" \
+            $dl_wget_flags "$dl_url" 2>&1) ||
             die "download failed: $dl_url"
-        dl_final=$(printf '%s\n' "$dl_hdrs" | awk -v orig="$dl_url" '
-            /^[[:space:]]*Location: / { loc = $2 }
-            END { if (loc ~ /^https?:\/\//) print loc; else print orig }')
+        # Inspect the chain: every hop's host must be allowed, and (in
+        # production) no hop may downgrade to HTTP. The walk runs in the
+        # main shell (not a command substitution) so a refused hop aborts
+        # the installer. A redirect chain that wget did not print
+        # (non-standard build) falls back to checking the original URL,
+        # which is the conservative answer.
+        dl_final=$dl_url
+        dl_locs=$(printf '%s\n' "$dl_hdrs" | awk '
+            /^[[:space:]]*Location: / { loc = $2; sub(/\r$/, "", loc); print loc }')
+        if [ -n "$dl_locs" ]; then
+            # IFS=newline word splitting (a URL carries no newline) with
+            # globbing disabled; the loop runs in the main shell so a
+            # refused hop aborts the installer. (A heredoc would expand
+            # the hop text — never do that with server-controlled input.)
+            set -f
+            _old_ifs=$IFS
+            IFS='
+'
+            for loc in $dl_locs; do
+                [ -n "$loc" ] || continue
+                dl_final=$(url_join "$dl_final" "$loc")
+                check_hop "$dl_final" "redirect hop"
+            done
+            IFS=$_old_ifs
+            set +f
+        fi
         [ -n "$dl_final" ] || die "download failed: could not determine the final URL of $dl_url"
     fi
-    dl_host=$(host_of_url "$dl_final")
-    case " $ALLOWED_HOSTS " in
-        *" $dl_host "*) : ;;
-        *)
-            die "download ended at unexpected host '$dl_host' (allowed: $ALLOWED_HOSTS); aborting"
-            ;;
-    esac
+    check_hop "$dl_final" "final URL"
 }
 
 # ---------------------------------------------------------------------------
@@ -530,7 +804,13 @@ download() {
 # Decide what to do about an existing file at $TARGET before installing.
 # Sets ACTION to 'install' | 'skip' | 'replace' | 'abort'. (A global is used
 # instead of command substitution so prompt/info text is not captured.)
-check_existing() {
+#
+# resolve_existing is the pure state resolution (no prompts, no consent):
+# 'skip' when the expected binary is already in place, 'install' when the
+# target is absent, 'replace' when --force consents, 'abort' otherwise.
+# check_existing wraps it with the interactive consent prompt for real
+# runs; --dry-run uses resolve_existing directly so it never prompts.
+resolve_existing() {
     ABORT_REASON=''
     if [ -L "$TARGET" ]; then
         # symlink: never follow, never overwrite without explicit consent
@@ -538,16 +818,9 @@ check_existing() {
         info "target is a symlink: $TARGET -> $link_dest"
         if [ "$FORCE" -eq 1 ]; then
             ACTION=replace
-        elif interactive; then
-            printf 'Replace the symlink %s (currently -> %s)? [y/N] ' "$TARGET" "$link_dest"
-            read -r ans || ans=''
-            case "$ans" in
-                y|Y|yes|YES) ACTION=replace ;;
-                *)           ACTION=abort; ABORT_REASON=declined ;;
-            esac
         else
             ACTION=abort
-            ABORT_REASON=noninteractive
+            ABORT_REASON=consent
         fi
         return 0
     fi
@@ -579,16 +852,30 @@ check_existing() {
     fi
     if [ "$FORCE" -eq 1 ]; then
         ACTION=replace
-    elif interactive; then
-        printf 'Replace %s with ltop v%s? [y/N] ' "$TARGET" "$VERSION"
-        read -r ans || ans=''
-        case "$ans" in
-            y|Y|yes|YES) ACTION=replace ;;
-            *)           ACTION=abort; ABORT_REASON=declined ;;
-        esac
     else
         ACTION=abort
-        ABORT_REASON=noninteractive
+        ABORT_REASON=consent
+    fi
+}
+
+check_existing() {
+    resolve_existing
+    if [ "$ACTION" = "abort" ] && [ "$ABORT_REASON" = "consent" ]; then
+        if interactive; then
+            if [ -L "$TARGET" ]; then
+                link_dest=$(readlink "$TARGET" 2>/dev/null || printf '?')
+                printf 'Replace the symlink %s (currently -> %s)? [y/N] ' "$TARGET" "$link_dest"
+            else
+                printf 'Replace %s with ltop v%s? [y/N] ' "$TARGET" "$VERSION"
+            fi
+            read -r ans || ans=''
+            case "$ans" in
+                y|Y|yes|YES) ACTION=replace ;;
+                *)           ABORT_REASON=declined ;;
+            esac
+        else
+            ABORT_REASON=noninteractive
+        fi
     fi
 }
 
@@ -632,9 +919,27 @@ do_install() {
     if [ "$DRYRUN" -eq 1 ]; then
         info "dry-run: would download $BASE_URL/v$VERSION/$ARCHIVE (sha256 $ARCHIVE_SHA)"
         info "dry-run: would verify the archive, the SHA256SUMS file and the extracted binary"
-        if [ -e "$TARGET" ] || [ -L "$TARGET" ]; then
-            info "dry-run: note — $TARGET already exists; a non-matching file would need --force or an interactive yes"
-        fi
+        # Resolve the existing-target state (no download, no prompt, no
+        # changes) so the plan says what a real run would do.
+        resolve_existing
+        case "$ACTION" in
+            skip)
+                info "dry-run: $TARGET already holds the expected ltop v$VERSION binary; a real run would be a no-op"
+                ;;
+            abort)
+                if [ -L "$TARGET" ]; then
+                    info "dry-run: a real run would stop here: $TARGET is a symlink (never followed) and would need --force or an interactive yes"
+                else
+                    info "dry-run: a real run would stop here: $TARGET exists and would need --force or an interactive yes"
+                fi
+                ;;
+            replace)
+                info "dry-run: a real run would replace the existing file at $TARGET (consent: --force)"
+                ;;
+            install)
+                info "dry-run: $TARGET does not exist yet; a real run would create it"
+                ;;
+        esac
         info "dry-run: would install atomically (temp file + chmod 0755 + mv) to $TARGET"
         info "dry-run: no changes made"
         exit 0
@@ -667,10 +972,7 @@ do_install() {
     # --- workspace + cleanup -------------------------------------------------
     WORK=$(mktemp -d "${TMPDIR:-/tmp}/ltop-install.XXXXXX") ||
         die "could not create a temporary workspace (mktemp failed)"
-    cleanup() {
-        [ -n "${WORK:-}" ] && rm -rf "$WORK"
-    }
-    trap 'cleanup' EXIT INT TERM
+    # cleanup + the INT/TERM traps were installed up front (see above)
 
     # --- download + verify the archive --------------------------------------
     info "downloading $ARCHIVE ..."
@@ -723,12 +1025,8 @@ do_install() {
     fi
     TMPBIN=$(mktemp "$PREFIX/.ltop-install.XXXXXX") ||
         die "could not create the temporary install file in $PREFIX"
-    # from here on, a failure must not leave the temp file behind
-    tmp_cleanup() {
-        [ -n "${TMPBIN:-}" ] && rm -f "$TMPBIN"
-        cleanup
-    }
-    trap 'tmp_cleanup' EXIT INT TERM
+    # from here on, a failure (or interrupt) must not leave the temp file
+    # behind: the up-front cleanup/INT/TERM traps handle it
     cp -f "$EXTRACTED" "$TMPBIN" || die "could not stage the binary (copy failed)"
     chmod 0755 "$TMPBIN" || die "could not set the executable bit on the staged binary"
     if [ "$ACTION" = "replace" ] && [ -L "$TARGET" ]; then

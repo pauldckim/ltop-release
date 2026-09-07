@@ -23,33 +23,41 @@ after publication and verified byte-for-byte against the staged artifacts.
 become release assets and are **never modified in place** — a changed
 artifact means a new version (or a new release with the old one
 superseded). The one-line installer lives on its own channel tag
-(`install-v1`, also immutable) and is documented in
+(`install-v2`, current; `install-v1` is superseded but remains published
+and immutable — both are channel tags, never moved) and is documented in
 [DISTRIBUTION.md](DISTRIBUTION.md) §5.1. See
 [DISTRIBUTION.md](DISTRIBUTION.md) §1 and §3.
 
-## Installer (tag `install-v1`)
+## Installer (tag `install-v2`)
 
 The one-line installer is pinned at the tag
-[`install-v1`](https://github.com/pauldckim/ltop-release/tree/install-v1)
+[`install-v2`](https://github.com/pauldckim/ltop-release/tree/install-v2)
 (installer channel — **not** a product version; the `vX.Y.Z` product tags
-are unchanged and immutable). The pinned script:
+are unchanged and immutable). The previous channel
+[`install-v1`](https://github.com/pauldckim/ltop-release/tree/install-v1)
+remains published and immutable (superseded: it predates the install-v2
+hardening — interrupt cleanup with exit 130/143, stdin-based hash
+verification, symlink-canonicalized prefix checks, wget no-downgrade
+flags + redirect-chain inspection, and the test-only platform override).
+Both channels pin the same product releases (macOS v0.1.1, Linux v0.1.0).
 
 | File | SHA-256 |
 |---|---|
-| `install.sh` (at `install-v1`) | `bee9538e81266d268bdd8765abf52a1686fe017d6bd0383b0bf7eaf54d280b81` |
+| `install.sh` (at `install-v2`) | `8e8131c1892a06e74a7ff87a2349db337fe72f89e1309c38e41f47259c5c4a43` |
+| `install.sh` (at `install-v1`, superseded) | `bee9538e81266d268bdd8765abf52a1686fe017d6bd0383b0bf7eaf54d280b81` |
 
 Verify the script before executing it (review-first alternative to
 `curl | sh`):
 
 ```sh
 curl --proto '=https' --tlsv1.2 -fsSL \
-  https://raw.githubusercontent.com/pauldckim/ltop-release/install-v1/install.sh \
+  https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh \
   -o /tmp/ltop-install.sh
 # macOS
 shasum -a 256 /tmp/ltop-install.sh
 # Linux
 sha256sum /tmp/ltop-install.sh
-# expected: bee9538e81266d268bdd8765abf52a1686fe017d6bd0383b0bf7eaf54d280b81
+# expected: 8e8131c1892a06e74a7ff87a2349db337fe72f89e1309c38e41f47259c5c4a43
 sh /tmp/ltop-install.sh
 ```
 
@@ -68,7 +76,14 @@ The installer's deterministic test suite
 platform mapping, all hash checks, download failures, redirect-host
 rejection, idempotency, foreign-file refusal, `--force`, the interactive
 prompt, symlink handling, uninstall (known/foreign), `--dry-run`, spaced
-paths, PATH hints, cleanup, and the no-shell-rc-mutation property.
+paths, PATH hints, cleanup, and the no-shell-rc-mutation property, plus
+the install-v2 hardening: SIGINT/SIGTERM mid-download (interrupted
+message, exit 130/143, cleanup), backslash-path hashing and unreadable
+existing files, symlinked-prefix canonicalization (unsafe alias refused,
+benign alias resolved, symlink loop refused), redirect-chain inspection
+(a foreign intermediate hop is refused even when the final URL is
+allowed), HTTPS-downgrade rejection, and the test-only platform override
+(a leaked platform variable without a test manifest is refused).
 
 ## Checksums
 

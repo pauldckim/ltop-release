@@ -6,14 +6,25 @@
 # serves it from a loopback HTTP server, and drives install.sh through the
 # documented test-only environment hooks:
 #
-#   LTOP_RELEASE_BASE_URL     -> the loopback fixture server
-#   LTOP_INSTALL_TEST_MANIFEST-> the fixture mapping (hashes of the fixtures)
-#   LTOP_INSTALL_PLATFORM     -> each of the three platform keys
-#   LTOP_INSTALL_INTERACTIVE=1-> the interactive prompt path
+#   LTOP_RELEASE_BASE_URL      -> the loopback fixture server
+#   LTOP_INSTALL_TEST_MANIFEST -> the fixture mapping (hashes of the fixtures)
+#   LTOP_INSTALL_TEST_PLATFORM -> each of the three platform keys
+#                                 (test-only: requires the manifest)
+#   LTOP_INSTALL_INTERACTIVE=1 -> the interactive prompt path
 #
 # The production defaults (embedded mapping, the GitHub base URL, the
 # HTTPS-only download policy) are asserted separately and are never
 # weakened by the hooks: the hash pipeline runs identically in both modes.
+#
+# Adversarial regression tests (install-v2 hardening):
+#   T30  signals: SIGINT/SIGTERM mid-download -> interrupted message,
+#        exit 130/143, workspace and staged file cleaned up
+#   T31  sha256: target path containing a backslash (GNU coreutils
+#        backslash-escaping of file names) and an unreadable existing file
+#   T32  symlinked prefix: alias into an unsafe system directory is
+#        refused; benign aliases are resolved; symlink loops are refused
+#   T33  downloads: redirect-chain inspection (a foreign intermediate hop
+#        is refused), HTTPS downgrade rejection (unit), no-downgrade flags
 #
 # No network access beyond 127.0.0.0/8, no real release data, no system
 # PATH changes, no shell rc changes (asserted).
@@ -43,11 +54,14 @@ cleanup() {
 trap 'cleanup' EXIT INT TERM
 
 # --- sha256 helper -----------------------------------------------------------
+# Hash via stdin so the tool never sees the file name: GNU coreutils
+# backslash-escapes file names in its output (a '\'-prefixed digest line),
+# which would corrupt the digest for paths containing a backslash.
 
 if command -v sha256sum >/dev/null 2>&1; then
-    sha256_of() { sha256sum "$1" | awk '{print $1}'; }
+    sha256_of() { sha256sum < "$1" | awk '{print $1}'; }
 else
-    sha256_of() { shasum -a 256 "$1" | awk '{print $1}'; }
+    sha256_of() { shasum -a 256 < "$1" | awk '{print $1}'; }
 fi
 
 # --- test harness ------------------------------------------------------------
@@ -218,7 +232,7 @@ run_inst() {
     pref=$3
     shift 3
     env LTOP_RELEASE_BASE_URL="$BASE" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
-        LTOP_INSTALL_PLATFORM="$plat" sh "$INSTALL" --prefix "$pref" "$@" \
+        LTOP_INSTALL_TEST_PLATFORM="$plat" sh "$INSTALL" --prefix "$pref" "$@" \
         > "$tmp/out-$name" 2>&1
     RC=$?
 }
@@ -232,7 +246,7 @@ run_inst_interactive() {
     shift 4
     printf '%s\n' "$answer" |
         env LTOP_RELEASE_BASE_URL="$BASE" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
-            LTOP_INSTALL_PLATFORM="$plat" LTOP_INSTALL_INTERACTIVE=1 \
+            LTOP_INSTALL_TEST_PLATFORM="$plat" LTOP_INSTALL_INTERACTIVE=1 \
             sh "$INSTALL" --prefix "$pref" "$@" > "$tmp/out-$name" 2>&1
     RC=$?
 }
@@ -294,7 +308,7 @@ expect_rc "T1 install.sh passes sh -n" 0 "$tmp/out-t1" $?
 env sh "$INSTALL" --help > "$tmp/out-t2" 2>&1
 expect_rc "T2 --help exits 0" 0 "$tmp/out-t2" $?
 expect_grep "T2 help shows usage" "$tmp/out-t2" 'Usage: sh install.sh'
-expect_grep "T2 help names the channel" "$tmp/out-t2" 'channel: install-v1'
+expect_grep "T2 help names the channel" "$tmp/out-t2" 'channel: install-v2'
 expect_grep "T2 help shows the license link" "$tmp/out-t2" 'github.com/pauldckim/ltop-release/blob/main/LICENSE.md'
 
 # =============================================================================
@@ -315,47 +329,120 @@ expect_rc "T3 --prefix without value exits 2" 2 "$tmp/out-t3c" $?
 # T4: production mapping is embedded and tag-pinned (no fixture env)
 # =============================================================================
 
-env LTOP_INSTALL_PLATFORM=macos-arm64 sh "$INSTALL" --prefix "$tmp/pfx/prod1" --dry-run > "$tmp/out-t4a" 2>&1
-expect_rc "T4 macos-arm64 dry-run exits 0" 0 "$tmp/out-t4a" $?
-expect_grep "T4 arm64 pins v0.1.1" "$tmp/out-t4a" 'v0\.1\.1/ltop-v0\.1\.1-macos-arm64\.zip'
-expect_grep "T4 arm64 archive sha embedded" "$tmp/out-t4a" '66c97f41f4a0c9919b89f8a003366a36f8e77d79af03ec866dccb3efbaa9fa55'
-expect_grep "T4 arm64 uses the GitHub base URL" "$tmp/out-t4a" 'https://github.com/pauldckim/ltop-release/releases/download'
+# T4a: no env at all — the *detected* platform's pinned mapping is used and
+# the production GitHub base URL is in effect (the platform override is
+# test-only since install-v2, so a production run cannot be steered).
+env sh "$INSTALL" --prefix "$tmp/pfx/prod1" --dry-run > "$tmp/out-t4a" 2>&1
+expect_rc "T4 detected-platform dry-run exits 0" 0 "$tmp/out-t4a" $?
+expect_grep "T4 uses the GitHub base URL" "$tmp/out-t4a" 'https://github.com/pauldckim/ltop-release/releases/download'
+t4plat=$(sed -n 's/^ltop: platform: //p' "$tmp/out-t4a" | head -1)
+case "$t4plat" in
+    macos-arm64)
+        t4arch='ltop-v0.1.1-macos-arm64.zip'
+        t4sha='66c97f41f4a0c9919b89f8a003366a36f8e77d79af03ec866dccb3efbaa9fa55' ;;
+    macos-x86_64)
+        t4arch='ltop-v0.1.1-macos-x86_64.zip'
+        t4sha='676da4356e00813e35092c8f386daa78ee41cca09a8f033949ca452135e5bdd9' ;;
+    linux-x86_64)
+        t4arch='ltop-v0.1.0-linux-x86_64.tar.gz'
+        t4sha='f940cf94a1023f4764a82f8e4bda5c075a09f1407baccaeeb4527574ad3f8722' ;;
+    *)
+        t4arch='' ;;
+esac
+if [ -n "$t4arch" ]; then
+    expect_grep "T4 detected platform ($t4plat) pins its archive" "$tmp/out-t4a" "$t4arch"
+    expect_grep "T4 detected platform archive sha embedded" "$tmp/out-t4a" "$t4sha"
+else
+    fail "T4 detected platform recognized" "unknown platform: $t4plat" "$tmp/out-t4a"
+fi
 
-env LTOP_INSTALL_PLATFORM=macos-x86_64 sh "$INSTALL" --prefix "$tmp/pfx/prod2" --dry-run > "$tmp/out-t4b" 2>&1
-expect_rc "T4 macos-x86_64 dry-run exits 0" 0 "$tmp/out-t4b" $?
-expect_grep "T4 x86_64 pins v0.1.1" "$tmp/out-t4b" 'v0\.1\.1/ltop-v0\.1\.1-macos-x86_64\.zip'
-expect_grep "T4 x86_64 archive sha embedded" "$tmp/out-t4b" '676da4356e00813e35092c8f386daa78ee41cca09a8f033949ca452135e5bdd9'
-
-env LTOP_INSTALL_PLATFORM=linux-x86_64 sh "$INSTALL" --prefix "$tmp/pfx/prod3" --dry-run > "$tmp/out-t4c" 2>&1
-expect_rc "T4 linux-x86_64 dry-run exits 0" 0 "$tmp/out-t4c" $?
-expect_grep "T4 linux pins v0.1.0" "$tmp/out-t4c" 'v0\.1\.0/ltop-v0\.1\.0-linux-x86_64\.tar\.gz'
-expect_grep "T4 linux archive sha embedded" "$tmp/out-t4c" 'f940cf94a1023f4764a82f8e4bda5c075a09f1407baccaeeb4527574ad3f8722'
+# T4b: unit-test the embedded mapping functions for ALL three platforms
+# (extracted from install.sh, so any host covers the full pinned record).
+t4b_fns="$tmp/t4b-fns.sh"
+: > "$t4b_fns"
+for fn in platform_version platform_archive platform_archive_sha \
+          platform_binary_sha platform_sums_sha platform_kind; do
+    awk -v f="$fn" '
+        $0 ~ "^" f "\\(\\) \\{" { fnd = 1 }
+        fnd { print }
+        fnd && $0 == "}" { exit }' "$INSTALL" >> "$t4b_fns"
+done
+t4b_out=$(sh -c '
+    . "$1"
+    for p in macos-arm64 macos-x86_64 linux-x86_64; do
+        printf "%s|%s|%s|%s|%s|%s|%s\n" "$p" \
+            "$(platform_version "$p")" "$(platform_archive "$p")" \
+            "$(platform_archive_sha "$p")" "$(platform_binary_sha "$p")" \
+            "$(platform_sums_sha "$p")" "$(platform_kind "$p")"
+    done' _ "$t4b_fns")
+t4b_want_macos_arm64='macos-arm64|0.1.1|ltop-v0.1.1-macos-arm64.zip|66c97f41f4a0c9919b89f8a003366a36f8e77d79af03ec866dccb3efbaa9fa55|19a6e42346f05dc37dd00f9ff723408d870237b72dc7a9cd77245069f443401a|79568789220e644d690bb1ef6c4091f126053a9a8f9670f4046f20775d4e6e12|zip'
+t4b_want_macos_x86_64='macos-x86_64|0.1.1|ltop-v0.1.1-macos-x86_64.zip|676da4356e00813e35092c8f386daa78ee41cca09a8f033949ca452135e5bdd9|00933d50ef9ca133d788f0a1d883f1ab71dd0acacfc6cf9eb0c2b89c4fba6cbd|79568789220e644d690bb1ef6c4091f126053a9a8f9670f4046f20775d4e6e12|zip'
+t4b_want_linux_x86_64='linux-x86_64|0.1.0|ltop-v0.1.0-linux-x86_64.tar.gz|f940cf94a1023f4764a82f8e4bda5c075a09f1407baccaeeb4527574ad3f8722|e18a3f0e9ea2e61ec5a44d5ab54256b774aec83a7d2ab4cf9e2f0df91daff089|6d5a9a753cdc272cf9284fa8b9ed3ea13f12028847804c3be4e66f01e910821c|targz'
+t4b_got_arm64=$(printf '%s\n' "$t4b_out" | sed -n '1p')
+t4b_got_x86_64=$(printf '%s\n' "$t4b_out" | sed -n '2p')
+t4b_got_linux=$(printf '%s\n' "$t4b_out" | sed -n '3p')
+if [ "$t4b_got_arm64" = "$t4b_want_macos_arm64" ]; then
+    pass "T4 embedded mapping: macos-arm64"
+else
+    fail "T4 embedded mapping: macos-arm64" "got: $t4b_got_arm64"
+fi
+if [ "$t4b_got_x86_64" = "$t4b_want_macos_x86_64" ]; then
+    pass "T4 embedded mapping: macos-x86_64"
+else
+    fail "T4 embedded mapping: macos-x86_64" "got: $t4b_got_x86_64"
+fi
+if [ "$t4b_got_linux" = "$t4b_want_linux_x86_64" ]; then
+    pass "T4 embedded mapping: linux-x86_64"
+else
+    fail "T4 embedded mapping: linux-x86_64" "got: $t4b_got_linux"
+fi
 
 # =============================================================================
-# T5: invalid base URL scheme / invalid platform override
+# T5: platform override is test-only (F5) + invalid base URL scheme
 # =============================================================================
 
-env LTOP_RELEASE_BASE_URL='ftp://127.0.0.1:1' LTOP_INSTALL_PLATFORM=linux-x86_64 \
-    sh "$INSTALL" --prefix "$tmp/pfx/t5" > "$tmp/out-t5a" 2>&1
-expect_rc "T5 non-http(s) base URL exits 1" 1 "$tmp/out-t5a" $?
-expect_grep "T5 names the invalid base URL" "$tmp/out-t5a" 'invalid base URL'
+# T5a: the removed v1 hook name is rejected — even with a valid manifest,
+# a leaked LTOP_INSTALL_PLATFORM can never steer a production run.
+env LTOP_INSTALL_PLATFORM=macos-arm64 LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
+    sh "$INSTALL" --prefix "$tmp/pfx/t5" --dry-run > "$tmp/out-t5a" 2>&1
+expect_rc "T5 removed v1 platform hook exits 1" 1 "$tmp/out-t5a" $?
+expect_grep "T5 names the removed hook" "$tmp/out-t5a" 'removed v1 test hook'
 
-env LTOP_INSTALL_PLATFORM=linux-aarch64 sh "$INSTALL" --prefix "$tmp/pfx/t5" > "$tmp/out-t5b" 2>&1
-expect_rc "T5 invalid platform override exits 1" 1 "$tmp/out-t5b" $?
-expect_grep "T5 names the invalid platform" "$tmp/out-t5b" 'invalid LTOP_INSTALL_PLATFORM'
+# T5b: the test-only hook without a manifest is rejected (a leaked
+# platform variable alone must not select a different architecture).
+env LTOP_INSTALL_TEST_PLATFORM=macos-arm64 \
+    sh "$INSTALL" --prefix "$tmp/pfx/t5" --dry-run > "$tmp/out-t5b" 2>&1
+expect_rc "T5 test platform without manifest exits 1" 1 "$tmp/out-t5b" $?
+expect_grep "T5 demands the test manifest" "$tmp/out-t5b" 'requires LTOP_INSTALL_TEST_MANIFEST'
+
+# T5c: an invalid platform value is rejected (with a manifest).
+env LTOP_RELEASE_BASE_URL="$BASE" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
+    LTOP_INSTALL_TEST_PLATFORM=linux-aarch64 \
+    sh "$INSTALL" --prefix "$tmp/pfx/t5" > "$tmp/out-t5c" 2>&1
+expect_rc "T5 invalid test platform exits 1" 1 "$tmp/out-t5c" $?
+expect_grep "T5 names the invalid platform" "$tmp/out-t5c" 'invalid LTOP_INSTALL_TEST_PLATFORM'
+
+# T5d: non-http(s) base URL is rejected.
+env LTOP_RELEASE_BASE_URL='ftp://127.0.0.1:1' \
+    sh "$INSTALL" --prefix "$tmp/pfx/t5" > "$tmp/out-t5d" 2>&1
+expect_rc "T5 non-http(s) base URL exits 1" 1 "$tmp/out-t5d" $?
+expect_grep "T5 names the invalid base URL" "$tmp/out-t5d" 'invalid base URL'
 
 # =============================================================================
-# T6: dry-run changes nothing
+# T6: dry-run changes nothing and reports the existing-target state (F6)
 # =============================================================================
 
 run_inst t6 linux-x86_64 "$tmp/pfx/t6" --dry-run
 expect_rc "T6 dry-run exits 0" 0 "$tmp/out-t6" "$RC"
 expect_grep "T6 dry-run announces no changes" "$tmp/out-t6" 'dry-run: no changes made'
+expect_grep "T6 dry-run reports an absent target" "$tmp/out-t6" 'does not exist yet'
 if [ ! -e "$tmp/pfx/t6" ]; then
     pass "T6 dry-run created no files"
 else
     fail "T6 dry-run created no files" "prefix dir exists after dry-run"
 fi
+
+# (T6x: dry-run state resolution against existing targets — see after T8)
 
 # =============================================================================
 # T7: install (fixture) — download, verify, atomic install
@@ -404,6 +491,61 @@ if [ "$(sha256_of "$tmp/pfx/t7/ltop")" = "$(sha256_of "$tmp/binfix/ltop-v9.9.9-l
     pass "T8 target unchanged"
 else
     fail "T8 target unchanged"
+fi
+
+# =============================================================================
+# T6x: dry-run state resolution against existing targets (F6)
+#
+# The dry-run plan must say what a real run would do, and it must never
+# prompt (stdin is /dev/null throughout: a prompt read would hang or
+# consume the wrong input).
+# =============================================================================
+
+run_inst t6x linux-x86_64 "$tmp/pfx/t6x"
+expect_rc "T6x install for dry-run state exits 0" 0 "$tmp/out-t6x" "$RC"
+
+env LTOP_RELEASE_BASE_URL="$BASE" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
+    LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 sh "$INSTALL" \
+    --prefix "$tmp/pfx/t6x" --dry-run < /dev/null > "$tmp/out-t6x1" 2>&1
+expect_rc "T6x dry-run on the expected binary exits 0" 0 "$tmp/out-t6x1" $?
+expect_grep "T6x dry-run reports the no-op" "$tmp/out-t6x1" 'already holds the expected'
+
+printf 'not ltop\n' > "$tmp/pfx/t6x/ltop"
+t6x_foreign=$(sha256_of "$tmp/pfx/t6x/ltop")
+env LTOP_RELEASE_BASE_URL="$BASE" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
+    LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 sh "$INSTALL" \
+    --prefix "$tmp/pfx/t6x" --dry-run < /dev/null > "$tmp/out-t6x2" 2>&1
+expect_rc "T6x dry-run on a foreign file exits 0" 0 "$tmp/out-t6x2" $?
+expect_grep "T6x dry-run reports the refusal" "$tmp/out-t6x2" 'a real run would stop here'
+if [ "$(sha256_of "$tmp/pfx/t6x/ltop")" = "$t6x_foreign" ]; then
+    pass "T6x dry-run left the foreign file untouched"
+else
+    fail "T6x dry-run left the foreign file untouched"
+fi
+
+env LTOP_RELEASE_BASE_URL="$BASE" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
+    LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 sh "$INSTALL" \
+    --prefix "$tmp/pfx/t6x" --dry-run --force < /dev/null > "$tmp/out-t6x3" 2>&1
+expect_rc "T6x dry-run --force on a foreign file exits 0" 0 "$tmp/out-t6x3" $?
+expect_grep "T6x dry-run reports the forced replacement" "$tmp/out-t6x3" 'would replace the existing file'
+if [ "$(sha256_of "$tmp/pfx/t6x/ltop")" = "$t6x_foreign" ]; then
+    pass "T6x dry-run --force left the file untouched"
+else
+    fail "T6x dry-run --force left the file untouched"
+fi
+
+rm -f "$tmp/pfx/t6x/ltop"
+ln -s /bin/ls "$tmp/pfx/t6x/ltop"
+env LTOP_RELEASE_BASE_URL="$BASE" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
+    LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 sh "$INSTALL" \
+    --prefix "$tmp/pfx/t6x" --dry-run < /dev/null > "$tmp/out-t6x4" 2>&1
+expect_rc "T6x dry-run on a symlink target exits 0" 0 "$tmp/out-t6x4" $?
+expect_grep "T6x dry-run names the symlink" "$tmp/out-t6x4" 'target is a symlink'
+expect_grep "T6x dry-run reports the symlink refusal" "$tmp/out-t6x4" 'is a symlink (never followed)'
+if [ -L "$tmp/pfx/t6x/ltop" ] && [ "$(readlink "$tmp/pfx/t6x/ltop")" = "/bin/ls" ]; then
+    pass "T6x dry-run left the symlink untouched"
+else
+    fail "T6x dry-run left the symlink untouched"
 fi
 
 # =============================================================================
@@ -580,7 +722,7 @@ mv "$tmp/sums.bak" "$tmp/docroot/v9.9.9/SHA256SUMS"
 # =============================================================================
 
 env LTOP_RELEASE_BASE_URL="http://127.0.0.1:1" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
-    LTOP_INSTALL_PLATFORM=linux-x86_64 sh "$INSTALL" --prefix "$tmp/pfx/t19" \
+    LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 sh "$INSTALL" --prefix "$tmp/pfx/t19" \
     > "$tmp/out-t19" 2>&1
 expect_rc "T19 dead server fails" 1 "$tmp/out-t19" $?
 expect_grep "T19 reports the download failure" "$tmp/out-t19" 'download failed'
@@ -595,7 +737,7 @@ fi
 # =============================================================================
 
 env LTOP_RELEASE_BASE_URL="http://127.0.0.1:$PORT_R" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
-    LTOP_INSTALL_PLATFORM=linux-x86_64 sh "$INSTALL" --prefix "$tmp/pfx/t20" \
+    LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 sh "$INSTALL" --prefix "$tmp/pfx/t20" \
     > "$tmp/out-t20" 2>&1
 expect_rc "T20 foreign-host redirect refused" 1 "$tmp/out-t20" $?
 expect_grep "T20 names the unexpected host" "$tmp/out-t20" 'unexpected host'
@@ -632,14 +774,16 @@ expect_grep "T22 states no shell files are modified" "$tmp/out-t22" 'does not mo
 # T23: unsafe prefixes rejected
 # =============================================================================
 
-env LTOP_INSTALL_PLATFORM=linux-x86_64 sh "$INSTALL" --prefix / > "$tmp/out-t23a" 2>&1
+# (no platform override: unsafe-prefix rejection is platform-independent
+# and must hold for the detected production platform)
+env sh "$INSTALL" --prefix / > "$tmp/out-t23a" 2>&1
 expect_rc "T23 / prefix refused" 1 "$tmp/out-t23a" $?
 expect_grep "T23 names the unsafe prefix" "$tmp/out-t23a" 'refusing unsafe install prefix'
 
-env LTOP_INSTALL_PLATFORM=linux-x86_64 sh "$INSTALL" --prefix /usr/bin > "$tmp/out-t23b" 2>&1
+env sh "$INSTALL" --prefix /usr/bin > "$tmp/out-t23b" 2>&1
 expect_rc "T23 /usr/bin prefix refused" 1 "$tmp/out-t23b" $?
 
-env LTOP_INSTALL_PLATFORM=linux-x86_64 sh "$INSTALL" --prefix relative/dir > "$tmp/out-t23c" 2>&1
+env sh "$INSTALL" --prefix relative/dir > "$tmp/out-t23c" 2>&1
 expect_rc "T23 relative prefix refused" 1 "$tmp/out-t23c" $?
 expect_grep "T23 demands an absolute path" "$tmp/out-t23c" 'must be an absolute path'
 
@@ -685,7 +829,7 @@ fi
 ws_before=$(ls -d "${TMPDIR:-/tmp}"/ltop-install.* 2>/dev/null | wc -l | awk '{print $1}')
 # force a failure: dead server
 env LTOP_RELEASE_BASE_URL="http://127.0.0.1:1" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
-    LTOP_INSTALL_PLATFORM=linux-x86_64 sh "$INSTALL" --prefix "$tmp/pfx/t26" \
+    LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 sh "$INSTALL" --prefix "$tmp/pfx/t26" \
     > "$tmp/out-t26" 2>&1
 ws_after=$(ls -d "${TMPDIR:-/tmp}"/ltop-install.* 2>/dev/null | wc -l | awk '{print $1}')
 if [ "$ws_before" = "$ws_after" ]; then
@@ -707,7 +851,7 @@ if command -v wget >/dev/null 2>&1; then
         p=$(command -v "$t" 2>/dev/null) && ln -s "$p" "$nocurl/$t"
     done
     env PATH="$nocurl" LTOP_RELEASE_BASE_URL="$BASE" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
-        LTOP_INSTALL_PLATFORM=linux-x86_64 sh "$INSTALL" --prefix "$tmp/pfx/t27" \
+        LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 sh "$INSTALL" --prefix "$tmp/pfx/t27" \
         > "$tmp/out-t27" 2>&1
     expect_rc "T27 wget fallback install exits 0" 0 "$tmp/out-t27" $?
     if [ -f "$tmp/pfx/t27/ltop" ]; then
@@ -741,7 +885,7 @@ mkdir -p "$tmp/pfx/t29"
 printf 'foreign\n' > "$tmp/pfx/t29/ltop"
 t29_foreign=$(sha256_of "$tmp/pfx/t29/ltop")
 env LTOP_RELEASE_BASE_URL="$BASE" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
-    LTOP_INSTALL_PLATFORM=linux-x86_64 LTOP_INSTALL_INTERACTIVE=1 \
+    LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 LTOP_INSTALL_INTERACTIVE=1 \
     sh -s -- --prefix "$tmp/pfx/t29" < "$INSTALL" > "$tmp/out-t29a" 2>&1
 expect_rc "T29 piped script refuses foreign file" 1 "$tmp/out-t29a" $?
 expect_grep "T29 refusal is non-interactive" "$tmp/out-t29a" 'refusing to replace the existing file'
@@ -755,10 +899,320 @@ fi
 run_inst t29b linux-x86_64 "$tmp/pfx/t29b"
 cp "$tmp/pfx/t29b/ltop" "$tmp/pfx/t29/ltop"
 env LTOP_RELEASE_BASE_URL="$BASE" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
-    LTOP_INSTALL_PLATFORM=linux-x86_64 LTOP_INSTALL_INTERACTIVE=1 \
+    LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 LTOP_INSTALL_INTERACTIVE=1 \
     sh -s -- --prefix "$tmp/pfx/t29" < "$INSTALL" > "$tmp/out-t29c" 2>&1
 expect_rc "T29 piped script is idempotent on the expected binary" 0 "$tmp/out-t29c" $?
 expect_grep "T29 reports already installed" "$tmp/out-t29c" 'already installed'
+
+# =============================================================================
+# T30: interrupts clean up and exit with a clear message/code (F1)
+# =============================================================================
+
+# Slow fixture server: every request sleeps 4 s so the signal lands
+# mid-download.
+PORT_S=$(pick_port)
+cat > "$tmp/slow_server.py" <<'PY'
+import http.server, sys, time, os
+port = int(sys.argv[1]); docroot = sys.argv[2]
+class H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        time.sleep(4)
+        path = os.path.join(docroot, self.path.lstrip("/"))
+        if os.path.isfile(path):
+            data = open(path, "rb").read()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        else:
+            self.send_response(404); self.end_headers()
+    def log_message(self, *a): pass
+http.server.HTTPServer(("127.0.0.1", port), H).serve_forever()
+PY
+python3 "$tmp/slow_server.py" "$PORT_S" "$tmp/docroot" >/dev/null 2>&1 &
+SRV_PIDS="$SRV_PIDS $!"
+wait_port "$PORT_S" || { echo "error: slow server did not start" >&2; exit 1; }
+
+# The signal must be sent by a process with the default SIGINT/SIGTERM
+# dispositions: a backgrounded shell job inherits SIG_IGN for SIGINT and
+# could not trap it. python3 therefore starts the installer in its own
+# session (setsid) and signals the whole process group, so the in-flight
+# downloader stops too; the installer's trap must then clean up and exit
+# 130 (INT) / 143 (TERM) with the interrupted message.
+python3 - "$INSTALL" "$PORT_S" "$MANIFEST" "$tmp/pfx/t30" > "$tmp/out-t30" 2>&1 <<'PY'
+import glob, os, signal, subprocess, sys, time
+install, port, manifest, prefix = sys.argv[1:5]
+env = dict(os.environ,
+           LTOP_RELEASE_BASE_URL="http://127.0.0.1:" + port,
+           LTOP_INSTALL_TEST_MANIFEST=manifest,
+           LTOP_INSTALL_TEST_PLATFORM="linux-x86_64")
+ws = lambda: set(glob.glob(os.path.join(os.environ.get("TMPDIR", "/tmp"), "ltop-install.*")))
+before = ws()
+ok = True
+for sig, want, tag in ((signal.SIGINT, 130, "INT"), (signal.SIGTERM, 143, "TERM")):
+    p = subprocess.Popen(["sh", install, "--prefix", prefix], env=env,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                         preexec_fn=os.setsid)
+    time.sleep(2.5)  # inside the slow download
+    os.killpg(p.pid, sig)
+    rc = p.wait()
+    err = p.stderr.read().decode("utf-8", "replace")
+    msg_ok = "interrupted" in err
+    print("%s rc=%d want=%d msg=%s" % (tag, rc, want, "OK" if msg_ok else "MISSING"))
+    if not msg_ok:
+        print("stderr: " + err[-400:])
+    if rc != want or not msg_ok:
+        ok = False
+left = ws() - before
+print("residue=%s" % ("NONE" if not left else "LEFT " + ",".join(sorted(left))))
+if left:
+    ok = False
+tgt = os.path.join(prefix, "ltop")
+print("target=%s" % ("ABSENT" if not os.path.exists(tgt) else "PRESENT"))
+if os.path.exists(tgt):
+    ok = False
+sys.exit(0 if ok else 1)
+PY
+expect_rc "T30 SIGINT/SIGTERM interrupted cleanly" 0 "$tmp/out-t30" $?
+expect_grep "T30 SIGINT exits 130" "$tmp/out-t30" 'INT rc=130 want=130'
+expect_grep "T30 SIGTERM exits 143" "$tmp/out-t30" 'TERM rc=143 want=143'
+expect_grep "T30 no workspace residue" "$tmp/out-t30" 'residue=NONE'
+expect_grep "T30 no partial install" "$tmp/out-t30" 'target=ABSENT'
+
+# =============================================================================
+# T31: sha256 robustness — backslash paths and unreadable files (F2)
+# =============================================================================
+
+# T31a: a target whose path contains a backslash. GNU coreutils sha256sum
+# escapes such file names and prefixes the digest line with '\', which the
+# old "tool <file> | awk '{print $1}'" form would have returned as the
+# "hash". The installer must still recognize the expected binary — an
+# idempotent no-op, not a refusal.
+run_inst t31a linux-x86_64 "$tmp/pfx/t31a"
+expect_rc "T31a install for the backslash test exits 0" 0 "$tmp/out-t31a" "$RC"
+mkdir -p "$tmp/pfx/bs\\dir"
+cp "$tmp/pfx/t31a/ltop" "$tmp/pfx/bs\\dir/ltop"
+run_inst t31b linux-x86_64 "$tmp/pfx/bs\\dir"
+expect_rc "T31 backslash-path target is an idempotent no-op" 0 "$tmp/out-t31b" "$RC"
+expect_grep "T31 reports already installed" "$tmp/out-t31b" 'already installed'
+if [ "$(sha256_of "$tmp/pfx/bs\\dir/ltop")" = "$(sha256_of "$tmp/binfix/ltop-v9.9.9-linux-x86_64/ltop")" ]; then
+    pass "T31 backslash-path binary untouched"
+else
+    fail "T31 backslash-path binary untouched"
+fi
+
+# T31c: an unreadable existing file must fail the hash (not produce an
+# empty one) and be refused non-interactively.
+if [ "$(id -u)" = "0" ]; then
+    skip "T31 unreadable existing file" "running as root; chmod 000 is still readable"
+else
+    mkdir -p "$tmp/pfx/t31c"
+    printf 'secret\n' > "$tmp/pfx/t31c/ltop"
+    chmod 000 "$tmp/pfx/t31c/ltop"
+    run_inst t31c linux-x86_64 "$tmp/pfx/t31c"
+    expect_rc "T31 unreadable file refused" 1 "$tmp/out-t31c" "$RC"
+    expect_grep "T31 names the unreadable file" "$tmp/out-t31c" 'could not be hashed (unreadable?)'
+    expect_grep "T31 refusal is non-interactive" "$tmp/out-t31c" 'refusing to replace the existing file'
+    chmod 644 "$tmp/pfx/t31c/ltop"
+fi
+
+# =============================================================================
+# T32: symlinked prefix components (F3)
+# =============================================================================
+
+# T32a: a benign alias — the prefix is a symlink into a safe directory.
+# The installer resolves it, says so, and installs at the resolved path.
+mkdir -p "$tmp/symreal"
+ln -s "$tmp/symreal" "$tmp/sym"
+run_inst t32a linux-x86_64 "$tmp/sym/bin"
+expect_rc "T32 install through a benign symlinked prefix exits 0" 0 "$tmp/out-t32a" "$RC"
+expect_grep "T32 announces the resolution" "$tmp/out-t32a" 'resolves to'
+if [ -f "$tmp/symreal/bin/ltop" ]; then
+    pass "T32 binary installed at the resolved path"
+else
+    fail "T32 binary installed at the resolved path"
+fi
+
+# T32b: an alias into an unsafe system directory — refused. The literal
+# prefix is safe; only the canonical path exposes the target.
+ln -s /usr/bin "$tmp/evilprefix"
+env LTOP_RELEASE_BASE_URL="$BASE" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
+    LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 sh "$INSTALL" \
+    --prefix "$tmp/evilprefix" > "$tmp/out-t32b" 2>&1
+expect_rc "T32 symlinked prefix into /usr/bin refused" 1 "$tmp/out-t32b" $?
+expect_grep "T32 names the resolved unsafe path" "$tmp/out-t32b" 'resolves to /usr/bin'
+if [ ! -e "$tmp/evilprefix/ltop" ] && [ ! -e /usr/bin/ltop ]; then
+    pass "T32 nothing written through the alias"
+else
+    fail "T32 nothing written through the alias"
+fi
+
+# T32c: a symlink loop as the prefix — resolution must fail (bounded),
+# not hang.
+ln -s loop "$tmp/loop"
+env LTOP_RELEASE_BASE_URL="$BASE" LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
+    LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 sh "$INSTALL" \
+    --prefix "$tmp/loop" > "$tmp/out-t32c" 2>&1
+expect_rc "T32 symlink-loop prefix refused" 1 "$tmp/out-t32c" $?
+expect_grep "T32 names the unresolvable prefix" "$tmp/out-t32c" 'cannot resolve the install prefix'
+
+# T32d: a symlinked *component* (not just the final element) is resolved.
+mkdir -p "$tmp/compreal/deep"
+ln -s "$tmp/compreal" "$tmp/compalias"
+run_inst t32d linux-x86_64 "$tmp/compalias/deep"
+expect_rc "T32 install through a symlinked component exits 0" 0 "$tmp/out-t32d" "$RC"
+if [ -f "$tmp/compreal/deep/ltop" ]; then
+    pass "T32 binary installed at the resolved component path"
+else
+    fail "T32 binary installed at the resolved component path"
+fi
+
+# =============================================================================
+# T33: download hardening — redirect chain, downgrade rejection (F4)
+# =============================================================================
+
+# Multi-route redirect server: routes = {path: redirect|file}
+PORT_C=$(pick_port)
+cat > "$tmp/chain_server.py" <<'PY'
+import http.server, sys, json, os
+port = int(sys.argv[1])
+routes = json.loads(sys.argv[2])
+class H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        r = routes.get(self.path)
+        if r is None:
+            self.send_response(404); self.end_headers(); return
+        if "redirect" in r:
+            self.send_response(302)
+            self.send_header("Location", r["redirect"])
+            self.end_headers()
+        else:
+            data = open(r["file"], "rb").read()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+    def log_message(self, *a): pass
+http.server.HTTPServer(("127.0.0.1", port), H).serve_forever()
+PY
+ARCH=$tmp/docroot/v9.9.9/ltop-v9.9.9-linux-x86_64.tar.gz
+SUMS=$tmp/docroot/v9.9.9/SHA256SUMS
+# T33a routes: the archive URL redirects to a *foreign host string*
+# (localhost != 127.0.0.1) on an intermediate hop, then to the allowed
+# host at a different path. No URL repeats (wget would otherwise abort on
+# its own loop detection), and the final URL is allowed — only a chain
+# inspection sees the foreign intermediate hop. (v1 checked the final URL
+# only and would have accepted this chain; the content hashes would then
+# be the only remaining barrier.)
+ROUTES_EVIL=$(python3 -c '
+import json, sys
+print(json.dumps({
+    "/v9.9.9/ltop-v9.9.9-linux-x86_64.tar.gz":
+        {"redirect": "http://localhost:%s/evil-mid" % sys.argv[1]},
+    "/evil-mid":
+        {"redirect": "http://127.0.0.1:%s/v9.9.9/real.tar.gz" % sys.argv[1]},
+    "/v9.9.9/real.tar.gz": {"file": sys.argv[2]},
+}))' "$PORT_C" "$ARCH")
+python3 "$tmp/chain_server.py" "$PORT_C" "$ROUTES_EVIL" >/dev/null 2>&1 &
+SRV_PIDS="$SRV_PIDS $!"
+wait_port "$PORT_C" || { echo "error: chain server did not start" >&2; exit 1; }
+
+if command -v wget >/dev/null 2>&1; then
+    # force the wget path (no curl in PATH) so the chain inspection runs
+    nocurl="$tmp/nocurl-t33"
+    mkdir -p "$nocurl"
+    for t in sh awk mktemp tar gzip gunzip unzip sha256sum shasum wget python3 \
+             uname readlink rm cp mv chmod mkdir cat sed grep sleep kill ls wc; do
+        p=$(command -v "$t" 2>/dev/null) && ln -s "$p" "$nocurl/$t"
+    done
+    env PATH="$nocurl" LTOP_RELEASE_BASE_URL="http://127.0.0.1:$PORT_C" \
+        LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
+        LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 sh "$INSTALL" \
+        --prefix "$tmp/pfx/t33a" > "$tmp/out-t33a" 2>&1
+    expect_rc "T33 wget: foreign intermediate hop refused" 1 "$tmp/out-t33a" $?
+    expect_grep "T33 names the unexpected hop host" "$tmp/out-t33a" "unexpected host"
+    if [ ! -e "$tmp/pfx/t33a/ltop" ]; then
+        pass "T33 nothing installed after the refused chain"
+    else
+        fail "T33 nothing installed after the refused chain"
+    fi
+else
+    skip "T33 wget redirect-chain inspection" "wget is not installed on this host (curl enforces the scheme per hop via --proto and checks the final URL; the intermediate-hop host check is wget-specific and documented as a limitation)"
+fi
+
+# T33b: a legitimate multi-hop chain on the allowed host (relative hops)
+# must succeed — the chain walk must not break normal redirects.
+ROUTES_OK=$(python3 -c '
+import json, sys
+print(json.dumps({
+    "/v9.9.9/ltop-v9.9.9-linux-x86_64.tar.gz":
+        {"redirect": "/v9.9.9/mid"},
+    "/v9.9.9/mid":
+        {"redirect": "/v9.9.9/real.tar.gz"},
+    "/v9.9.9/real.tar.gz": {"file": sys.argv[1]},
+    "/v9.9.9/SHA256SUMS": {"file": sys.argv[2]},
+}))' "$ARCH" "$SUMS")
+PORT_C2=$(pick_port)
+python3 "$tmp/chain_server.py" "$PORT_C2" "$ROUTES_OK" >/dev/null 2>&1 &
+SRV_PIDS="$SRV_PIDS $!"
+wait_port "$PORT_C2" || { echo "error: chain server 2 did not start" >&2; exit 1; }
+env LTOP_RELEASE_BASE_URL="http://127.0.0.1:$PORT_C2" \
+    LTOP_INSTALL_TEST_MANIFEST="$MANIFEST" \
+    LTOP_INSTALL_TEST_PLATFORM=linux-x86_64 sh "$INSTALL" \
+    --prefix "$tmp/pfx/t33b" > "$tmp/out-t33b" 2>&1
+expect_rc "T33 multi-hop chain on the allowed host installs" 0 "$tmp/out-t33b" $?
+if [ -f "$tmp/pfx/t33b/ltop" ]; then
+    pass "T33 target installed through the chain"
+else
+    fail "T33 target installed through the chain"
+fi
+
+# T33c: unit-test check_hop (extracted from install.sh): an HTTPS base
+# must reject a non-HTTPS hop (downgrade) and a foreign host, and accept
+# a same-host HTTPS hop.
+t33c_fns="$tmp/t33c-fns.sh"
+for fn in host_of_url scheme_of_url url_join check_hop; do
+    awk -v f="$fn" '
+        $0 ~ "^" f "\\(\\) \\{" { fnd = 1 }
+        fnd { print }
+        fnd && $0 == "}" { exit }' "$INSTALL" >> "$t33c_fns"
+done
+# Each case runs in its own subshell: check_hop calls die (exit 1) on a
+# refusal, which must not stop the remaining cases.
+t33c_out=$(sh -c '
+    . "$1"
+    die() { echo "DIE: $1"; exit 1; }
+    BASE_URL="https://127.0.0.1"
+    ALLOWED_HOSTS="127.0.0.1"
+    ( check_hop "https://127.0.0.1/ok" "redirect hop" ) && echo "same-host-https rc=0" || echo "same-host-https rc=$?"
+    ( check_hop "http://127.0.0.1/down" "redirect hop" ) && echo "downgrade rc=0" || echo "downgrade rc=$?"
+    ( check_hop "https://other.example/x" "final URL" ) && echo "foreign rc=0" || echo "foreign rc=$?"
+' _ "$t33c_fns" 2>&1)
+if printf '%s' "$t33c_out" | grep -q 'same-host-https rc=0'; then
+    pass "T33 check_hop accepts a same-host HTTPS hop"
+else
+    fail "T33 check_hop accepts a same-host HTTPS hop" "got: $t33c_out"
+fi
+if printf '%s' "$t33c_out" | grep -q 'DIE: download redirect hop downgraded to non-HTTPS'; then
+    pass "T33 check_hop rejects an HTTPS->HTTP downgrade"
+else
+    fail "T33 check_hop rejects an HTTPS->HTTP downgrade" "got: $t33c_out"
+fi
+if printf '%s' "$t33c_out" | grep -q 'DIE: download final URL ended at unexpected host'; then
+    pass "T33 check_hop rejects a foreign final host"
+else
+    fail "T33 check_hop rejects a foreign final host" "got: $t33c_out"
+fi
+
+# T33d: the no-downgrade flags are wired into the download path.
+if grep -q -- "--proto" "$INSTALL" && grep -q -- "=https" "$INSTALL" \
+    && grep -q -- "--tlsv1.2" "$INSTALL" \
+    && grep -q -- "--https-only" "$INSTALL" \
+    && grep -q -- "--secure-protocol=TLSv1_2" "$INSTALL"; then
+    pass "T33 script carries the no-downgrade flags"
+else
+    fail "T33 script carries the no-downgrade flags"
+fi
 
 # =============================================================================
 

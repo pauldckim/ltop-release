@@ -12,17 +12,23 @@ Windows and Linux from the
 ## One-line installer (macOS + Linux)
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v1/install.sh | sh
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh | sh
 ```
 
-`install.sh` (repository root, tag-pinned at `install-v1`) is a POSIX sh
-script that, for macOS (arm64 and x86_64, Rosetta-aware) and Linux (x86_64):
+`install.sh` (repository root, tag-pinned at `install-v2` — the current
+installer channel; the previous `install-v1` tag remains published and
+immutable) is a POSIX sh script that, for macOS (arm64 and x86_64,
+Rosetta-aware) and Linux (x86_64):
 
 1. detects the platform and selects the pinned artifact
    (macOS → v0.1.1, Linux → v0.1.0 — the current release per platform);
-2. downloads the archive **over HTTPS only** (TLS ≥ 1.2; `curl` preferred,
-   `wget` fallback) and restricts the final URL to the release hosts —
-   in production mode: `github.com`, `objects.githubusercontent.com`,
+2. downloads the archive **over HTTPS only, with no downgrade** (TLS ≥ 1.2;
+   `curl` preferred, `wget` fallback; `curl` runs with `--proto '=https'`
+   in production, which refuses any redirect hop to a non-HTTPS URL, and
+   the `wget` fallback adds `--https-only`/`--secure-protocol=TLSv1_2` on
+   builds that support them and inspects every redirect hop it prints) and
+   restricts the final URL to the release hosts — in production mode:
+   `github.com`, `objects.githubusercontent.com`,
    `release-assets.githubusercontent.com`;
 3. verifies **four SHA-256 values embedded in the script** before
    installing anything: the archive, the release `SHA256SUMS` file, the
@@ -38,8 +44,15 @@ installer asks before replacing. A symlink at the target is never followed
 or overwritten without explicit consent. `--uninstall` removes the target
 only when its hash matches a known ltop binary (all 0.1.0/0.1.1 macOS and
 Linux hashes); foreign files are refused. Unsafe prefixes (`/`, core system
-directories) are rejected; unwritable prefixes produce a clear error
-(no privilege escalation is attempted).
+directories) are rejected — and the check runs against the **canonical**
+prefix, so a symlinked `--prefix` cannot alias a write into an unsafe
+system directory (benign aliases such as `/tmp` → `/private/tmp` on macOS
+are resolved and used); unwritable prefixes produce a clear error (no
+privilege escalation is attempted). An interrupt (Ctrl-C / SIGTERM) cleans
+up the temporary workspace and staged file and exits with a clear
+"interrupted" message and code 130/143 — nothing is left half-installed.
+`--dry-run` reports the resolved plan, including what a real run would do
+about an existing target, without prompting or changing anything.
 
 Options: `--prefix DIR`, `--force`, `--uninstall`, `--dry-run`, `--quiet`,
 `--help`.
@@ -208,7 +221,7 @@ If you used the one-line installer, uninstall it the same way (it removes
 only files whose hash matches a known ltop binary):
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v1/install.sh | sh -s -- --uninstall
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh | sh -s -- --uninstall
 ```
 
 Otherwise, remove the binary (and the extracted folder, if you kept one):

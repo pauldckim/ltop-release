@@ -2,11 +2,58 @@
 
 All notable public changes to ltop releases are recorded here.
 
-## Installer channel: `install-v1` — 2026-09-07 (published)
+## Installer channel: `install-v2` — 2026-09-07 (published)
 
 **Installer channel, not a product version.** The product releases are the
-`vX.Y.Z` tags above; this entry records the one-line installer pinned at
-the tag [`install-v1`](https://github.com/pauldckim/ltop-release/tree/install-v1).
+`vX.Y.Z` tags above; this entry records the hardened one-line installer
+pinned at the tag
+[`install-v2`](https://github.com/pauldckim/ltop-release/tree/install-v2).
+No product artifact changed: the installer downloads and verifies the
+existing published releases (macOS v0.1.1, Linux v0.1.0). The previous
+channel [`install-v1`](https://github.com/pauldckim/ltop-release/tree/install-v1)
+is **superseded but remains published and immutable** (never moved).
+
+Hardening over `install-v1` (each with adversarial regression tests in
+`scripts/tests/test-install.sh`):
+
+- **Interrupts (F1):** SIGINT/SIGTERM traps clean up the temporary
+  workspace and the staged file, print a clear "interrupted" message, and
+  exit with the conventional code (130/143); nothing is left
+  half-installed.
+- **Hashing (F2):** SHA-256 digests are computed from a private temp file
+  via stdin, so the hash tool never sees the original file name (no GNU
+  coreutils backslash-escaping of file names) and an unreadable file
+  fails the hash instead of yielding an empty digest; the tool's exit
+  status is preserved and the digest is validated.
+- **Prefix canonicalization (F3):** every symlink component of
+  `--prefix` is resolved (portable; bounded against symlink loops) and
+  the resolved path is re-checked against the unsafe-prefix list, so a
+  symlinked prefix cannot alias a write into an unsafe system directory;
+  benign aliases (e.g. `/tmp` → `/private/tmp` on macOS) are resolved
+  and used.
+- **No downgrade (F4):** `curl` runs with `--proto '=https'` in
+  production (refuses any redirect hop to a non-HTTPS URL); the `wget`
+  fallback adds `--https-only` / `--secure-protocol=TLSv1_2` on builds
+  that support them and inspects every redirect hop it prints — a foreign
+  intermediate hop is refused even when the final URL is allowed.
+  Documented limitation: a downloader exposing neither its redirect hops
+  nor a no-downgrade flag cannot be fully chain-audited; the four-hash
+  pipeline remains the binding guarantee.
+- **Test-only platform override (F5):** the v1 `LTOP_INSTALL_PLATFORM`
+  hook is removed (setting it is an error); the replacement
+  `LTOP_INSTALL_TEST_PLATFORM` is honored only together with
+  `LTOP_INSTALL_TEST_MANIFEST`, so a leaked platform variable alone can
+  never select a different architecture in production.
+- **Dry-run (F6):** `--dry-run` reports the resolved existing-target
+  state (no-op / would stop / would replace / would create) without
+  prompting or changing anything.
+
+## Installer channel: `install-v1` — 2026-09-07 (superseded by install-v2; published and immutable)
+
+**Installer channel, not a product version.** The product releases are the
+`vX.Y.Z` tags above; this entry records the original one-line installer
+pinned at the tag
+[`install-v1`](https://github.com/pauldckim/ltop-release/tree/install-v1).
 No product artifact changed: the installer downloads and verifies the
 existing published releases (macOS v0.1.1, Linux v0.1.0).
 

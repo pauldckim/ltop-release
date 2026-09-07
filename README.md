@@ -94,15 +94,16 @@ machine-local paths are embedded in the shipped binaries (see
 **One-line installer (macOS arm64/x86_64 and Linux x86_64):**
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v1/install.sh | sh
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh | sh
 ```
 
-The installer is **tag-pinned** (`install-v1`): the script and the release
-artifacts it installs are immutable. It detects your platform (Rosetta-aware
-on macOS), downloads the pinned archive over HTTPS only, verifies the
-archive, the release `SHA256SUMS` file and the extracted binary against
-embedded SHA-256 values, and installs atomically to
-`$HOME/.local/bin/ltop` — no sudo, no shell rc changes, no services.
+The installer is **tag-pinned** (`install-v2`, the current channel; the
+previous `install-v1` tag remains published and immutable): the script and
+the release artifacts it install are immutable. It detects your platform
+(Rosetta-aware on macOS), downloads the pinned archive over HTTPS only
+(no downgrade), verifies the archive, the release `SHA256SUMS` file and the
+extracted binary against embedded SHA-256 values, and installs atomically
+to `$HOME/.local/bin/ltop` — no sudo, no shell rc changes, no services.
 Re-running it is a no-op when the expected binary is already installed; it
 refuses to replace a different file without `--force` (or an interactive
 yes), and `--uninstall` removes only files whose hash matches a known ltop
@@ -116,7 +117,7 @@ binary. Options: `--prefix DIR`, `--force`, `--uninstall`, `--dry-run`,
 > [docs/VERIFY.md](docs/VERIFY.md) before executing:
 >
 > ```sh
-> curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v1/install.sh -o /tmp/ltop-install.sh
+> curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh -o /tmp/ltop-install.sh
 > shasum -a 256 /tmp/ltop-install.sh   # compare with docs/VERIFY.md
 > sh /tmp/ltop-install.sh
 > ```
@@ -287,7 +288,7 @@ THIRD_PARTY_NOTICES.md  self-contained third-party notices: component
 third-party/licenses/   canonical SPDX license texts (supplemental)
 sbom/                   CycloneDX SBOM (generated from the dependency lock)
 releases/<ver>/SHA256SUMS  tracked checksum manifest per release
-install.sh              one-line installer (tag-pinned at install-v1;
+install.sh              one-line installer (tag-pinned at install-v2;
                         macOS + Linux, HTTPS-only, hash-verified, atomic)
 docs/                   INSTALL, VERIFY, SECURITY, DISTRIBUTION
 assets/screenshots/     dashboard screenshots (real Terminal captures
