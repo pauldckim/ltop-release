@@ -258,5 +258,7 @@ assets/screenshots/     dashboard screenshots (real Terminal captures
 homebrew/               Homebrew cask reference copy (live cask is in
                         the pauldckim/homebrew-tap tap repository)
 winget/                 WinGet manifest template (disabled until published/signed)
-scripts/                public-safe packaging + checksum verification helpers
+scripts/                public-safe release helpers (packaging, checksum
+                        verification, pre-publish gate, cask generation)
+                        + deterministic tests under scripts/tests/
 ```
