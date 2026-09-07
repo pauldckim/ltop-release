@@ -21,25 +21,23 @@ published releases above remain the installable ones.
 ## One-line installer (macOS + Linux)
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh | sh
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v3/install.sh | sh
 ```
 
-> **Next channel (staged):** the `install.sh` on `main` has been updated
-> to pin the staged **v0.1.2** artifacts (macOS arm64/x86_64 and Linux
-> x86_64 — all three platforms at v0.1.2) and is staged as the next
-> installer channel, `install-v3`. The `install-v3` tag is created after
-> the v0.1.2 publication and the one-liner above is repointed in a
-> follow-up commit; until then the published `install-v2` one-liner
-> remains valid and installs the current published releases (macOS
-> v0.1.1, Linux v0.1.0).
+> **Channel history:** `install-v3` (current) pins the **v0.1.2**
+> artifacts for all three platforms (macOS arm64/x86_64 and Linux
+> x86_64). The previous channels `install-v2` (macOS v0.1.1, Linux
+> v0.1.0) and `install-v1` are **superseded but remain published and
+> immutable** — users who already copied an older one-liner keep working.
+> Per-channel script SHA-256 values: [VERIFY.md](VERIFY.md) ("Installer").
 
-`install.sh` (repository root, tag-pinned at `install-v2` — the current
-published installer channel; the previous `install-v1` tag remains
-published and immutable) is a POSIX sh script that, for macOS (arm64 and
-x86_64, Rosetta-aware) and Linux (x86_64):
+`install.sh` (repository root, tag-pinned at `install-v3` — the current
+published installer channel; the previous `install-v2` and `install-v1`
+tags remain published and immutable) is a POSIX sh script that, for
+macOS (arm64 and x86_64, Rosetta-aware) and Linux (x86_64):
 
 1. detects the platform and selects the pinned artifact
-   (macOS → v0.1.1, Linux → v0.1.0 — the current release per platform);
+   (macOS → v0.1.2, Linux → v0.1.2 — the current release per platform);
 2. downloads the archive **over HTTPS only, with no downgrade** (TLS ≥ 1.2;
    `curl` preferred, `wget` fallback; `curl` runs with `--proto '=https'`
    in production, which refuses any redirect hop to a non-HTTPS URL, and
@@ -243,7 +241,7 @@ If you used the one-line installer, uninstall it the same way (it removes
 only files whose hash matches a known ltop binary):
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh | sh -s -- --uninstall
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v3/install.sh | sh -s -- --uninstall
 ```
 
 Otherwise, remove the binary (and the extracted folder, if you kept one):

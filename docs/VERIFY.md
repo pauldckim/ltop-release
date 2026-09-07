@@ -33,38 +33,44 @@ after publication and verified byte-for-byte against the staged artifacts.
 become release assets and are **never modified in place** — a changed
 artifact means a new version (or a new release with the old one
 superseded). The one-line installer lives on its own channel tag
-(`install-v2`, current; `install-v1` is superseded but remains published
-and immutable — both are channel tags, never moved) and is documented in
-[DISTRIBUTION.md](DISTRIBUTION.md) §5.1. See
+(`install-v3`, current; `install-v2` and `install-v1` are superseded but
+remain published and immutable — channel tags are never moved) and is
+documented in [DISTRIBUTION.md](DISTRIBUTION.md) §5.1. See
 [DISTRIBUTION.md](DISTRIBUTION.md) §1 and §3.
 
-## Installer (tag `install-v2`)
+## Installer (tag `install-v3`)
 
 The one-line installer is pinned at the tag
-[`install-v2`](https://github.com/pauldckim/ltop-release/tree/install-v2)
+[`install-v3`](https://github.com/pauldckim/ltop-release/tree/install-v3)
 (installer channel — **not** a product version; the `vX.Y.Z` product tags
-are unchanged and immutable). The previous channel
+are unchanged and immutable). The previous channels
+[`install-v2`](https://github.com/pauldckim/ltop-release/tree/install-v2)
+and
 [`install-v1`](https://github.com/pauldckim/ltop-release/tree/install-v1)
-remains published and immutable (superseded: it predates the install-v2
-hardening — interrupt cleanup with exit 130/143, stdin-based hash
-verification, symlink-canonicalized prefix checks, wget no-downgrade
-flags + redirect-chain inspection, and the test-only platform override).
-Both channels pin the same product releases (macOS v0.1.1, Linux v0.1.0).
+remain published and immutable (superseded: both pinned macOS v0.1.1 /
+Linux v0.1.0; install-v1 also predates the install-v2 hardening —
+interrupt cleanup with exit 130/143, stdin-based hash verification,
+symlink-canonicalized prefix checks, wget no-downgrade flags +
+redirect-chain inspection, and the test-only platform override).
 
-**Next channel (staged):** the `install.sh` on `main` has been updated to
-pin the staged **v0.1.2** artifacts (macOS arm64/x86_64 and Linux
-x86_64 — all three platforms at v0.1.2, sharing the v0.1.2
-`SHA256SUMS`) and is staged as the next installer channel, `install-v3`.
-The `install-v3` tag is created after the v0.1.2 publication and the
-one-liner in this document, the README and INSTALL.md is repointed in a
-follow-up commit; until then the published `install-v2` one-liner
-remains valid and installs the current published releases. The updated
-script passes its deterministic test suite on a macOS host and a Linux
-host (loopback fixtures only; see "What is verified today" below).
+**Publication record (install-v3, 2026-09-08):** the v0.1.2 mapping
+(macOS arm64/x86_64 + Linux x86_64 — all three platforms at v0.1.2,
+sharing the v0.1.2 `SHA256SUMS`; the three v0.1.2 binary hashes join the
+known-ltop set) was committed on `main` and the `install-v3` tag was
+created at that commit (`db9d1d2`, tag object
+`a642ff661fc0d70792c5a4ece73d670ad1dd0810`) after the v0.1.2 GitHub
+Release existed, so the pinned asset URLs resolve. The tag is never
+moved. The public raw URL
+(`https://raw.githubusercontent.com/pauldckim/ltop-release/install-v3/install.sh`)
+was fetched and compared byte-for-byte with the committed `install.sh`
+(2026-09-08: PASS). The updated script passed its deterministic test
+suite on a macOS host (144 tests, 0 failed, 2 skipped — wget absent) and
+a Linux host (149 tests, 0 failed, 0 skipped); loopback fixtures only.
 
 | File | SHA-256 |
 |---|---|
-| `install.sh` (at `install-v2`) | `8e8131c1892a06e74a7ff87a2349db337fe72f89e1309c38e41f47259c5c4a43` |
+| `install.sh` (at `install-v3`) | `903f9286b884d262b00f673cf60112bf349b8190ccd0579b1ee5bb5bf21a0fa3` |
+| `install.sh` (at `install-v2`, superseded) | `8e8131c1892a06e74a7ff87a2349db337fe72f89e1309c38e41f47259c5c4a43` |
 | `install.sh` (at `install-v1`, superseded) | `bee9538e81266d268bdd8765abf52a1686fe017d6bd0383b0bf7eaf54d280b81` |
 
 Verify the script before executing it (review-first alternative to
@@ -72,13 +78,13 @@ Verify the script before executing it (review-first alternative to
 
 ```sh
 curl --proto '=https' --tlsv1.2 -fsSL \
-  https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh \
+  https://raw.githubusercontent.com/pauldckim/ltop-release/install-v3/install.sh \
   -o /tmp/ltop-install.sh
 # macOS
 shasum -a 256 /tmp/ltop-install.sh
 # Linux
 sha256sum /tmp/ltop-install.sh
-# expected: 8e8131c1892a06e74a7ff87a2349db337fe72f89e1309c38e41f47259c5c4a43
+# expected: 903f9286b884d262b00f673cf60112bf349b8190ccd0579b1ee5bb5bf21a0fa3
 sh /tmp/ltop-install.sh
 ```
 
@@ -89,6 +95,7 @@ embedded `SHA256SUMS` file hashes are:
 
 | File | SHA-256 |
 |---|---|
+| `SHA256SUMS` of the v0.1.2 release | `3a76bbfcc4df41f617fb7149ee74927c5897fae6a67cad40103dfb779ee22850` |
 | `SHA256SUMS` of the v0.1.1 release | `79568789220e644d690bb1ef6c4091f126053a9a8f9670f4046f20775d4e6e12` |
 | `SHA256SUMS` of the v0.1.0 release | `6d5a9a753cdc272cf9284fa8b9ed3ea13f12028847804c3be4e66f01e910821c` |
 

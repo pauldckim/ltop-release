@@ -2,6 +2,46 @@
 
 All notable public changes to ltop releases are recorded here.
 
+## Installer channel: `install-v3` — 2026-09-08 (published)
+
+**Installer channel, not a product version.** The product releases are
+the `vX.Y.Z` tags below; this entry records the one-line installer
+pinned at the tag
+[`install-v3`](https://github.com/pauldckim/ltop-release/tree/install-v3).
+v0.1.2 is now current for **all three platforms** the installer covers
+(macOS arm64, macOS x86_64, Linux x86_64), so the pinned mapping
+changed:
+
+- **Pinned mapping:** macOS arm64/x86_64 →
+  `ltop-v0.1.2-macos-{arm64,x86_64}.zip`, Linux x86_64 →
+  `ltop-v0.1.2-linux-x86_64.tar.gz`; the v0.1.2 `SHA256SUMS` asset is
+  shared by all three platforms (file hash `3a76bbfc…`). The three
+  v0.1.2 binary hashes join the known-ltop set used by `--uninstall`
+  and the existing-file message (the 0.1.0/0.1.1 hashes remain
+  recognized).
+- **No behavior change:** the install-v2 hardening (interrupt cleanup,
+  stdin-based hashing, canonicalized prefix checks, no-downgrade
+  downloads + redirect-chain inspection, test-only platform override,
+  dry-run reporting) is unchanged; only the pinned mapping and the
+  known-hash set were updated.
+- **Publication record (2026-09-08):** the tag was created at commit
+  `db9d1d2` (tag object
+  `a642ff661fc0d70792c5a4ece73d670ad1dd0810`) after the v0.1.2 GitHub
+  Release existed, so the pinned asset URLs resolve; the tag is never
+  moved. `install.sh` SHA-256 at `install-v3`:
+  `903f9286b884d262b00f673cf60112bf349b8190ccd0579b1ee5bb5bf21a0fa3` —
+  the public raw URL was fetched and compared byte-for-byte with the
+  committed script (PASS). The published v0.1.2 release assets were
+  re-downloaded and verified against `releases/v0.1.2/SHA256SUMS`
+  (4/4 OK; the `SHA256SUMS` asset is byte-identical to the tracked
+  manifest). The updated script passed its deterministic test suite on
+  a macOS host (144 tests, 0 failed, 2 skipped — wget absent) and a
+  Linux host (149 tests, 0 failed, 0 skipped); loopback fixtures only.
+- The previous channel
+  [`install-v2`](https://github.com/pauldckim/ltop-release/tree/install-v2)
+  (macOS v0.1.1, Linux v0.1.0) is **superseded but remains published
+  and immutable** (never moved), as is `install-v1`.
+
 ## 0.1.2 — 2026-09-08 (staged; publication pending)
 
 **Status: staged — not yet published.** The four-platform archives below
@@ -89,7 +129,7 @@ in [docs/VERIFY.md](docs/VERIFY.md)).
 
 Full checksums and the verification record: [docs/VERIFY.md](docs/VERIFY.md).
 
-## Installer channel: `install-v2` — 2026-09-07 (published)
+## Installer channel: `install-v2` — 2026-09-07 (superseded by install-v3; published and immutable)
 
 **Installer channel, not a product version.** The product releases are the
 `vX.Y.Z` tags above; this entry records the hardened one-line installer

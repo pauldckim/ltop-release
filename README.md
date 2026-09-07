@@ -103,11 +103,12 @@ machine-local paths are embedded in the shipped binaries (see
 **One-line installer (macOS arm64/x86_64 and Linux x86_64):**
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh | sh
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v3/install.sh | sh
 ```
 
-The installer is **tag-pinned** (`install-v2`, the current channel; the
-previous `install-v1` tag remains published and immutable): the script and
+The installer is **tag-pinned** (`install-v3`, the current channel; the
+previous `install-v2` and `install-v1` tags remain published and
+immutable): the script and
 the release artifacts it install are immutable. It detects your platform
 (Rosetta-aware on macOS), downloads the pinned archive over HTTPS only
 (no downgrade), verifies the archive, the release `SHA256SUMS` file and the
@@ -119,13 +120,13 @@ yes), and `--uninstall` removes only files whose hash matches a known ltop
 binary. Options: `--prefix DIR`, `--force`, `--uninstall`, `--dry-run`,
 `--quiet`, `--help`.
 
-> **Next channel (staged):** the `install.sh` on `main` has been updated
-> to pin the staged **v0.1.2** artifacts (macOS arm64/x86_64 and Linux
-> x86_64) and is staged as the next installer channel, `install-v3`. The
-> `install-v3` tag is created after the v0.1.2 publication and this
-> one-liner is repointed in a follow-up commit; until then the published
-> `install-v2` one-liner above remains valid and installs the current
-> published releases (macOS v0.1.1, Linux v0.1.0).
+> **Channel history:** `install-v3` (current) pins the **v0.1.2**
+> artifacts for all three platforms (v0.1.2 is the current release for
+> macOS arm64/x86_64 and Linux x86_64). The previous channels
+> `install-v2` (macOS v0.1.1, Linux v0.1.0) and `install-v1` are
+> **superseded but remain published and immutable** — users who already
+> copied an older one-liner keep working. Per-channel script SHA-256
+> values: [docs/VERIFY.md](docs/VERIFY.md) ("Installer").
 
 > **Review before you pipe.** `curl | sh` executes whatever the URL serves
 > at that moment. The tag pin makes the script immutable, but the review
@@ -134,7 +135,7 @@ binary. Options: `--prefix DIR`, `--force`, `--uninstall`, `--dry-run`,
 > [docs/VERIFY.md](docs/VERIFY.md) before executing:
 >
 > ```sh
-> curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh -o /tmp/ltop-install.sh
+> curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v3/install.sh -o /tmp/ltop-install.sh
 > shasum -a 256 /tmp/ltop-install.sh   # compare with docs/VERIFY.md
 > sh /tmp/ltop-install.sh
 > ```
@@ -307,7 +308,7 @@ THIRD_PARTY_NOTICES.md  self-contained third-party notices: component
 third-party/licenses/   canonical SPDX license texts (supplemental)
 sbom/                   CycloneDX SBOM (generated from the dependency lock)
 releases/<ver>/SHA256SUMS  tracked checksum manifest per release
-install.sh              one-line installer (tag-pinned at install-v2;
+install.sh              one-line installer (tag-pinned at install-v3;
                         macOS + Linux, HTTPS-only, hash-verified, atomic)
 docs/                   INSTALL, VERIFY, SECURITY, DISTRIBUTION
 assets/screenshots/     dashboard screenshots (real Terminal captures

@@ -150,7 +150,7 @@ sh scripts/tests/test-install.sh
 
 | Script | Purpose |
 |---|---|
-| `install.sh` (repo root) | one-line installer; the published channel is `install-v2` (§5.1), the `install-v3` candidate (v0.1.2 mapping) is staged on `main` |
+| `install.sh` (repo root) | one-line installer, tag-pinned at `install-v3` (§5.1) |
 | `scripts/verify-release.sh` / `verify-release.ps1` | verify a `SHA256SUMS` file against local archives (macOS/Linux, Windows) |
 | `scripts/package-release.sh` | package prebuilt binaries into deterministic release archives (version-keyed timestamp table: 0.1.0 → 2026-09-05, 0.1.1 → 2026-09-06, 0.1.2 → 2026-09-08; unknown version is a usage error) |
 | `scripts/release-check.sh` | pre-publish gate: checksums, archive shape, cask mirror, SBOM, changelog, forbidden-content scan, tag state |
@@ -324,38 +324,41 @@ storage and is referenced only by name in release notes.
    the cask URL resolves (the published tap keeps serving 0.1.1 until
    then).
 
-### One-line installer (published channel `install-v2`; `install-v3` staged)
+### One-line installer (tag `install-v3`)
 
 `install.sh` (repository root) is the curl|sh channel for macOS
 (arm64/x86_64) and Linux (x86_64). It is published on its own **installer
-channel tag** `install-v2` (current published channel; `install-v1` is
-superseded but remains published and immutable) — deliberately *not* a
-product `vX.Y.Z` tag:
+channel tag** `install-v3` (current published channel; `install-v2` and
+`install-v1` are superseded but remain published and immutable) —
+deliberately *not* a product `vX.Y.Z` tag:
 
 - **Why a separate tag:** the product tags (`v0.1.0`, `v0.1.1`,
   `v0.1.2`) are the immutable release tags (I1) and predate the
   installer; the installer pins the *current* artifact per platform
-  (published `install-v2`: macOS → v0.1.1, Linux → v0.1.0) and must be
-  updatable when a new platform version becomes current without touching
-  any product tag or release asset.
-- **0.1.2 mapping (staged as `install-v3`):** v0.1.2 becomes current for
-  all three platforms at publication, so the `install.sh` on `main` was
-  updated to pin the v0.1.2 artifacts (macOS arm64/x86_64 + Linux
-  x86_64, the v0.1.2 `SHA256SUMS` shared by all three) and to add the
-  three v0.1.2 binary hashes to the known-ltop set used by
-  `--uninstall` and the existing-file message. This staged script is the
-  **`install-v3` channel candidate**: the `install-v3` tag is created
-  after the v0.1.2 publication (the new immutable channel), and the
-  one-liner in README/INSTALL/VERIFY is repointed in a follow-up commit;
-  until then the published `install-v2` one-liner remains valid and
-  installs the current published releases. The updated script passes its
-  deterministic test suite on a macOS host (144 tests, 0 failed, 2
-  skipped — wget absent) and a Linux host (149 tests, 0 failed, 0
-  skipped), loopback fixtures only.
+  (published `install-v3`: macOS → v0.1.2, Linux → v0.1.2; the
+  superseded `install-v2` pinned macOS → v0.1.1, Linux → v0.1.0) and
+  must be updatable when a new platform version becomes current without
+  touching any product tag or release asset.
+- **0.1.2 mapping (published as `install-v3`, 2026-09-08):** v0.1.2
+  became current for all three platforms, so `install.sh` was updated to
+  pin the v0.1.2 artifacts (macOS arm64/x86_64 + Linux x86_64, the
+  v0.1.2 `SHA256SUMS` shared by all three) and to add the three v0.1.2
+  binary hashes to the known-ltop set used by `--uninstall` and the
+  existing-file message. The `install-v3` tag was created at the commit
+  carrying this mapping (`db9d1d2`, tag object
+  `a642ff661fc0d70792c5a4ece73d670ad1dd0810`) after the v0.1.2 GitHub
+  Release existed, and the one-liner in README/INSTALL/VERIFY was
+  repointed in a follow-up docs commit (script SHA-256
+  `903f9286b884d262b00f673cf60112bf349b8190ccd0579b1ee5bb5bf21a0fa3`,
+  public raw URL verified byte-for-byte against the committed script,
+  2026-09-08). The updated script passed its deterministic test suite on
+  a macOS host (144 tests, 0 failed, 2 skipped — wget absent) and a
+  Linux host (149 tests, 0 failed, 0 skipped), loopback fixtures only.
 - **Immutability:** once a channel tag is pushed it is never moved or
-  mutated. `install-v1` keeps working for users who already copied it.
-  A changed installer ships as the next channel tag (`install-v3`, …)
-  and the README/INSTALL one-liner is repointed in a follow-up commit.
+  mutated. `install-v1` and `install-v2` keep working for users who
+  already copied them. A changed installer ships as the next channel tag
+  (`install-v4`, …) and the README/INSTALL one-liner is repointed in a
+  follow-up commit.
 - **Security properties** (implemented and tested by
   `scripts/tests/test-install.sh`): HTTPS-only downloads (TLS ≥ 1.2;
   `curl` preferred, `wget` fallback) with the final URL restricted to the
