@@ -1,0 +1,46 @@
+# ===========================================================================
+# ltop WinGet manifest — DISABLED TEMPLATE (not submittable as-is)
+#
+# Part of the 0.1.2 multi-file manifest set (version / defaultLocale /
+# installer) under winget/manifests/p/pauldckim/ltop/0.1.2/. Named
+# `pauldckim.ltop.installer.yaml.template` (not `.yaml`) so winget tooling
+# and the microsoft/winget-pkgs validation pipeline never pick it up. See
+# the version manifest template in this directory for the generation
+# record and the unsigned-binary caveat.
+#
+# Installer route: portable ZIP (the 0.1.0 template's route, D1):
+#   InstallerType: zip, NestedInstallerType: portable,
+#   NestedInstallerFiles (RelativeFilePath relative to the zip root,
+#   including the archive's top-level directory).
+# ===========================================================================
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
+PackageIdentifier: pauldckim.ltop
+PackageVersion: 0.1.2
+Platform:
+  - Windows.Desktop
+MinimumOSVersion: 10.0.17763.0
+InstallerType: zip
+NestedInstallerType: portable
+NestedInstallerFiles:
+  - RelativeFilePath: ltop-v0.1.2-windows-x86_64/ltop.exe
+    PortableCommandAlias: ltop
+Installers:
+  - Architecture: x64
+    # GitHub Releases asset URL under the publisher's own repository — the
+    # publisher's release location per WinGet URL policy (GitHub's internal
+    # 302 to its asset CDN is expected, not a third-party redirector). The
+    # archive is the scheduled v0.1.2 GitHub Release asset (the URL
+    # resolves once the release is published).
+    InstallerUrl: https://github.com/pauldckim/ltop-release/releases/download/v0.1.2/ltop-v0.1.2-windows-x86_64.zip
+    # SHA-256 of the staged ltop-v0.1.2-windows-x86_64.zip (pinned in
+    # releases/v0.1.2/SHA256SUMS); re-verify against the published asset
+    # before submission.
+    InstallerSha256: 283cab4b15969a44ca15fabee2faa028ae42d83b1dae27343d63704c29e1f86c
+    # No `Scope`: winget reports "Scope is not supported for InstallerType
+    # portable" — a portable zip registers neither a user nor a machine
+    # entry, so the field is omitted (the 0.1.0 singleton template carried
+    # it; this set is warning-free).
+    UpgradeBehavior: install
+ReleaseDate: '2026-09-08'
+ManifestType: installer
+ManifestVersion: 1.12.0

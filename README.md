@@ -11,6 +11,15 @@ Grafana required.
 - **License:** proprietary freeware (see [LICENSE.md](LICENSE.md)). The
   **source code is not distributed** and is not available from the
   distributor.
+- **Next release (staged 2026-09-08, publication pending):**
+  **v0.1.2** — the first release shipping **all four platforms** (macOS
+  arm64, macOS x86_64, Windows x86_64, Linux x86_64): API key
+  authentication (`--api-key-file` / `LTOP_API_KEY`) and the Linux
+  process-discovery fix (thread entries excluded). The staged archives
+  are checksum-pinned in
+  [`releases/v0.1.2/SHA256SUMS`](releases/v0.1.2/SHA256SUMS); the
+  `v0.1.2` tag and GitHub Release are created at publication (see
+  [CHANGELOG.md](CHANGELOG.md) for the full staged entry).
 - **Current release:**
   [v0.1.1](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.1)
   (published 2026-09-06) — adds macOS arm64 (Apple Silicon) and rebuilds
@@ -109,6 +118,14 @@ refuses to replace a different file without `--force` (or an interactive
 yes), and `--uninstall` removes only files whose hash matches a known ltop
 binary. Options: `--prefix DIR`, `--force`, `--uninstall`, `--dry-run`,
 `--quiet`, `--help`.
+
+> **Next channel (staged):** the `install.sh` on `main` has been updated
+> to pin the staged **v0.1.2** artifacts (macOS arm64/x86_64 and Linux
+> x86_64) and is staged as the next installer channel, `install-v3`. The
+> `install-v3` tag is created after the v0.1.2 publication and this
+> one-liner is repointed in a follow-up commit; until then the published
+> `install-v2` one-liner above remains valid and installs the current
+> published releases (macOS v0.1.1, Linux v0.1.0).
 
 > **Review before you pipe.** `curl | sh` executes whatever the URL serves
 > at that moment. The tag pin makes the script immutable, but the review
@@ -253,9 +270,11 @@ linked into the binary are identified in
 **self-contained**: it carries the verbatim license and copyright texts
 collected from the cargo registry sources of all 299 locked packages
 (gaps are flagged in the file, not papered over). The component inventory
-is unchanged between 0.1.0 and 0.1.1 (same dependency lock). Canonical
-SPDX license texts under [`third-party/licenses/`](third-party/licenses/)
-are a supplemental reference, and the CycloneDX SBOMs are at
+is unchanged between 0.1.0, 0.1.1 and 0.1.2 (same dependency lock).
+Canonical SPDX license texts under
+[`third-party/licenses/`](third-party/licenses/) are a supplemental
+reference, and the CycloneDX SBOMs are at
+[`sbom/ltop-v0.1.2.cdx.json`](sbom/ltop-v0.1.2.cdx.json) (0.1.2),
 [`sbom/ltop-v0.1.1.cdx.json`](sbom/ltop-v0.1.1.cdx.json) (0.1.1) and
 [`sbom/ltop-v0.1.0.cdx.json`](sbom/ltop-v0.1.0.cdx.json) (0.1.0).
 

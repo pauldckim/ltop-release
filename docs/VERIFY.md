@@ -2,6 +2,16 @@
 
 ## Current status (read this first)
 
+**v0.1.2 is staged (2026-09-08), publication pending.** v0.1.2 is the
+first release shipping **all four platforms** (macOS arm64, macOS
+x86_64, Windows x86_64, Linux x86_64): API key authentication
+(`--api-key-file` / `LTOP_API_KEY`) and the Linux process-discovery fix.
+The staged archives are pinned below and in
+`releases/v0.1.2/SHA256SUMS`; the `v0.1.2` tag and GitHub Release are
+created at publication, and the archives are attached to the release
+then. Until publication the current published releases remain v0.1.1
+(macOS) and v0.1.0 (Windows/Linux).
+
 **v0.1.1 was published on 2026-09-06.** v0.1.1 adds macOS arm64
 (Apple Silicon) and rebuilds macOS x86_64 at the new version; it is
 **macOS-only** — the published v0.1.0 Windows and Linux artifacts
@@ -40,6 +50,17 @@ hardening — interrupt cleanup with exit 130/143, stdin-based hash
 verification, symlink-canonicalized prefix checks, wget no-downgrade
 flags + redirect-chain inspection, and the test-only platform override).
 Both channels pin the same product releases (macOS v0.1.1, Linux v0.1.0).
+
+**Next channel (staged):** the `install.sh` on `main` has been updated to
+pin the staged **v0.1.2** artifacts (macOS arm64/x86_64 and Linux
+x86_64 — all three platforms at v0.1.2, sharing the v0.1.2
+`SHA256SUMS`) and is staged as the next installer channel, `install-v3`.
+The `install-v3` tag is created after the v0.1.2 publication and the
+one-liner in this document, the README and INSTALL.md is repointed in a
+follow-up commit; until then the published `install-v2` one-liner
+remains valid and installs the current published releases. The updated
+script passes its deterministic test suite on a macOS host and a Linux
+host (loopback fixtures only; see "What is verified today" below).
 
 | File | SHA-256 |
 |---|---|
@@ -88,6 +109,57 @@ allowed), HTTPS-downgrade rejection, and the test-only platform override
 ## Checksums
 
 Verify the archive you downloaded **before** running it.
+
+### v0.1.2 (staged 2026-09-08; publication pending — all four platforms)
+
+| Artifact | SHA-256 |
+|---|---|
+| `ltop-v0.1.2-macos-arm64.zip` | `d349b64375fb8263011a625c5f585db0930affdf2c0d0c3e2deb268d84780b47` |
+| `ltop-v0.1.2-macos-x86_64.zip` | `0fe80dfdb36616059a56a645c3d3eeddf1bd5257150e48141fb063b0b77f2c7c` |
+| `ltop-v0.1.2-windows-x86_64.zip` | `283cab4b15969a44ca15fabee2faa028ae42d83b1dae27343d63704c29e1f86c` |
+| `ltop-v0.1.2-linux-x86_64.tar.gz` | `f11144035a054c0c944f648045a25d5bc68e1def2236b7ed60cc6179bcb56bba` |
+
+The binaries are the **final stripped release binaries** (macOS
+ad-hoc-signed, per the F1 order build → re-verify → strip → sign → final
+hash), verified by hash after transfer and before packaging:
+
+| Binary | Size (bytes) | SHA-256 |
+|---|---|---|
+| macOS arm64 `ltop` (ad-hoc signed) | 4,354,928 | `a8f8ab16ec7e37c8121b86d7966c47fa1ba4292933696f068d11a33b6b1a9a0c` |
+| macOS x86_64 `ltop` (ad-hoc signed) | 4,570,256 | `24362c464980074810762ec626b80e33aa98bac6743179462bbe5452dce69546` |
+| Windows x86_64 `ltop.exe` (unsigned) | 4,683,264 | `b5d18dfee508680d25368e99067e8f3d557a5c16048b6a6663526e6ee6f8cf65` |
+| Linux x86_64 `ltop` (unsigned) | 4,958,536 | `84a84b7c56e399f9178703da71be8894f02a394fef2ce36d1e01f5d3e41414c4` |
+
+**Binary quality (0.1.2):** same as 0.1.1 — **stripped** (macOS `strip`,
+Linux `strip --strip-all`, Windows `profile.release.strip=symbols`) and
+built with the build machine's home directory remapped to a neutral
+prefix (`--remap-path-prefix`), so **no build-machine paths** are
+embedded (machine-path byte scan: zero occurrences in all four
+binaries). The macOS binaries link only the 5 macOS system
+dylibs/frameworks; the arm64 binary carries `LC_BUILD_VERSION` minos
+11.0.0 (the arm64 floor, `MACOSX_DEPLOYMENT_TARGET=11.0`) and the
+x86_64 binary keeps the recorded Mach-O minimum. The Linux binary is a
+glibc dynamic build.
+
+**Toolchain (0.1.2, exact per artifact):** rustc **1.98.0**
+(commit `88d9e12ae`) for the macOS arm64 and x86_64 artifacts — the
+pinned baseline, no deviation; rustc **1.98.1** (commit `48a229cea`)
+for the Windows and Linux artifacts — a recorded deviation from the
+1.98.0 pin (a release may use a newer compiler only with the exact
+`rustc --version` recorded per artifact; the compiler identity was
+fingerprinted from the shipped binaries and matches the build-host
+records).
+
+**Packaging (0.1.2):** deterministic — a second packaging run from the
+same inputs produced byte-identical archives (fixed 2026-09-08 UTC
+timestamps, sorted entries, zeroed owners); each archive contains
+exactly the binary, `LICENSE.md`, `THIRD_PARTY_NOTICES.md`, `README.txt`
+(no source, no scripts, no machine paths); zip entry modes are binary
+0755 / others 0644 (no exec bit on the Windows zip); extracted binary
+hashes equal the staging hashes above. These values are recorded in
+`releases/v0.1.2/SHA256SUMS` (tracked; the staged copy in `dist/v0.1.2/`
+is byte-identical); the `SHA256SUMS` file's own SHA-256 is
+`3a76bbfcc4df41f617fb7149ee74927c5897fae6a67cad40103dfb779ee22850`.
 
 ### v0.1.1 (published 2026-09-06; macOS only)
 
@@ -193,6 +265,18 @@ sh ../../scripts/verify-release.sh SHA256SUMS
 .\scripts\verify-release.ps1 -SumsFile .\dist\v0.1.0\SHA256SUMS
 ```
 
+## Signature status (0.1.2)
+
+| Platform | Status | What it means |
+|---|---|---|
+| macOS (arm64 + x86_64) | **ad-hoc signed** (`Signature=adhoc`) | same as 0.1.1: the arm64 binary must carry at least an ad-hoc signature to launch on Apple Silicon; the x86_64 binary is ad-hoc signed for consistency. **Not** a Developer ID signature — a quarantined first run is still blocked by Gatekeeper (verify the SHA-256 first, then the unblock procedure in [INSTALL.md](INSTALL.md)) |
+| Windows | **unsigned** (no Authenticode) | SmartScreen shows the unknown-publisher prompt (same as 0.1.0) |
+| Linux | n/a | checksum verification only |
+
+Developer ID + notarization (macOS), Authenticode (Windows) and
+GPG-signed checksums (Linux) remain the planned fixes
+([DISTRIBUTION.md](DISTRIBUTION.md) §4).
+
 ## Signature status (0.1.1)
 
 **The 0.1.1 macOS binaries are ad-hoc signed** (`codesign -dv` shows
@@ -248,6 +332,57 @@ notarization). See [DISTRIBUTION.md](DISTRIBUTION.md) for the planned
 signing work.
 
 ## What is verified today
+
+**v0.1.2 (staged 2026-09-08, publication pending):**
+
+- SHA-256 checksums of all four staged archives (this file +
+  `releases/v0.1.2/SHA256SUMS`), and of the binaries inside them
+  (verified after transfer, before packaging, and after extraction from
+  all four archives).
+- Binary quality: all four binaries stripped, machine-path byte scan
+  with zero occurrences, `ltop --version` → `ltop 0.1.2` (exit 0);
+  macOS ad-hoc signature verified (`codesign -dv` → `Signature=adhoc`),
+  arm64 deployment target minos 11.0.0; exact compiler identity per
+  artifact recorded ("Checksums" above).
+- The archives contain exactly: the binary, `LICENSE.md`,
+  `THIRD_PARTY_NOTICES.md`, `README.txt` — nothing else; the notices
+  carry the 0.1.2 header and the unchanged 299-component inventory.
+- Deterministic packaging: a second packaging run from the same inputs
+  produced byte-identical archives (fixed 2026-09-08 UTC timestamps,
+  sorted entries, zeroed owners).
+- `THIRD_PARTY_NOTICES.md` component inventory unchanged from
+  0.1.0/0.1.1 (same 299-package dependency lock); the SBOM is
+  regenerated for 0.1.2 at
+  [`../sbom/ltop-v0.1.2.cdx.json`](../sbom/ltop-v0.1.2.cdx.json)
+  (299 components, identical set).
+- Homebrew cask (staged): `Casks/ltop.rb` in the tap and the
+  `homebrew/Casks/ltop.rb.template` mirror are generated for 0.1.2 with
+  per-architecture URL/checksum selection; `ruby -c`, stub-DSL
+  evaluation for both simulated architectures, `brew style --cask`,
+  `brew audit --cask` and `brew info --cask` (Homebrew 6.0.22) all pass.
+  The cask is committed/pushed to the tap **after** the v0.1.2 GitHub
+  Release exists (the cask URL must resolve).
+- WinGet (staged): the 0.1.2 three-file manifest set
+  (`winget/manifests/p/pauldckim/ltop/0.1.2/`) was generated from the
+  0.1.0 template with the scheduled v0.1.2 asset URL and the staged
+  archive hash; `winget validate` passed on a Windows host (winget
+  v1.29.290, 2026-09-08: "Manifest validation succeeded", no warnings).
+  No external PR is submitted before publication.
+ - Installer (staged as the `install-v3` channel): the updated
+   `install.sh` (v0.1.2 mapping for all three platforms, v0.1.2
+   known-binary/uninstall hashes) passes its deterministic test suite on
+   a macOS host (144 tests, 0 failed, 2 skipped — wget absent) and a
+   Linux host (149 tests, 0 failed, 0 skipped); loopback fixtures only.
+- M4 arm64 native run: the shipped arm64 binary was executed on the
+  Apple M4 Max certification host (macOS 26.6.2, arm64) — identity hash
+  match with the staged record (`a8f8ab16…`), `file` → Mach-O arm64,
+  minos 11.0.0, exactly the 5 system dylibs/frameworks, ad-hoc
+  signature, `ltop --version` → `ltop 0.1.2`, native PTY `q` smoke, and
+  10/10 loopback mock endpoint checks (see "Certification (0.1.2)"
+  below).
+- Certification: the full 33-gate live certification passed on the
+  Apple M4 Max (macOS 26.6.2, arm64), finalized (see
+  "Certification (0.1.2)" below).
 
 **v0.1.1 (published 2026-09-06):**
 
@@ -318,6 +453,63 @@ asset digests match the tracked manifests
 (`releases/v0.1.0/SHA256SUMS`, `releases/v0.1.1/SHA256SUMS`), and
 independently downloaded assets passed `SHA256SUMS` in full.
 Published assets are never modified in place; changes require a new release.
+
+## Certification (0.1.2, sanitized summary)
+
+The 0.1.2 artifacts were built and certified on 2026-09-08. This is the
+durable sanitized summary; the machine-local reports are not published
+(same policy as the 0.1.0/0.1.1 records: no internal host names,
+internal IPs, machine-local paths, or report file names in this
+repository — hosts are referenced by role only).
+
+**Build and toolchain (per artifact, exact):**
+
+| Artifact | Toolchain | Notes |
+|---|---|---|
+| macOS arm64 + x86_64 | rustc **1.98.0** (commit `88d9e12ae`) — the pinned baseline, no deviation | F1 order: build → functional re-verify → strip → ad-hoc sign → final hash; arm64 cross-built with default `aarch64-apple-darwin` codegen + `MACOSX_DEPLOYMENT_TARGET=11.0`, x86_64 rebuilt with the identical procedure |
+| Windows x86_64 | rustc **1.98.1** (commit `48a229cea`) — **recorded deviation** from the 1.98.0 pin (the exact version is recorded per artifact, as the pin rule requires) | MSVC build, `profile.release.strip=symbols`; unsigned (no Authenticode yet) |
+| Linux x86_64 | rustc **1.98.1** (commit `48a229cea`) — **recorded deviation** from the 1.98.0 pin (same as above; identity fingerprinted from the shipped binary) | glibc dynamic build, `strip --strip-all`; unsigned (checksums only) |
+
+**Deterministic gates per platform (0.1.2 source, `cargo fmt --check`,
+`cargo check --all-targets`, `cargo clippy --all-targets -- -D warnings`
+all PASS with zero warnings):**
+
+- macOS: **441 Rust tests, 0 failed** (including the Ratatui
+  `TestBackend` dashboard tests at 80×24 + resize); Python certification
+  suite **62 OK**, scripts suite **79 OK**; loopback-mock HTTP tests
+  cover the `Authorization: Bearer` header and the 401 mapping.
+- Windows: **439 Rust tests, 0 failed** (the one-test delta vs macOS is
+  the Unix-only key-file permission test, which does not compile on
+  Windows — the expected platform delta); console `q` smoke PASS.
+- Linux: **442 Rust tests, 0 failed** (the one-test delta vs macOS is
+  the Linux-only multithreaded-discovery regression test: a single
+  8-thread process resolves to exactly one discovery candidate); PTY
+  `q` smoke PASS.
+- Network tests use loopback mocks only; the pinned llama.cpp
+  (`427291b`) and pinned model were used for the live run.
+
+**M4 arm64 native verification (Apple M4 Max, macOS 26.6.2 arm64):**
+
+- Shipped arm64 binary identity: the transferred binary's hash matched
+  the staged record (`a8f8ab16…`), `file` → Mach-O arm64, minos 11.0.0,
+  exactly the 5 system dylibs/frameworks, `codesign -dv` →
+  `Signature=adhoc`, `ltop --version` → `ltop 0.1.2` (exit 0).
+- Native PTY `q` smoke: PASS (clean exit, terminal restored).
+- Loopback mock endpoint checks: **10/10 PASS** (real CPU% from
+  time-differenced samples, non-zero RSS, the macOS N/A fields shown as
+  N/A, remote-endpoint semantics).
+- **Full 33-gate live certification: 33/33 gates PASS** (0 FAIL /
+  0 SKIPPED / 0 N-A), finalized and not aborted, against a real
+  llama-server (pinned commit, CPU-only static build, GPU off) with the
+  pinned model, covering the live `/props`/`/slots`/`/metrics` schemas,
+  the live-stream inference semantics, all TUI key/resize/restart/
+  remote-semantics gates, terminal restoration on `q`/Ctrl-C, and the
+  300 s soak.
+
+**Windows ConPTY live certification: N/A with reason** — the live driver
+is Unix/PTY-based; a Windows ConPTY live `llama-server` run is not
+executable. Recorded N/A, never PASS (same status as the 0.1.0 Windows
+artifact).
 
 ## Certification (0.1.1, sanitized summary)
 

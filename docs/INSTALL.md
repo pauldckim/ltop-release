@@ -9,16 +9,34 @@ Windows and Linux from the
 (0.1.1 is macOS-only) — and **verify the checksum before running anything**
 ([VERIFY.md](VERIFY.md)).
 
+**v0.1.2 (staged 2026-09-08, publication pending):** the next release ships
+all four platforms (macOS arm64/x86_64, Windows x86_64, Linux x86_64) with
+API key authentication and the Linux process-discovery fix. Its archives
+are staged and checksum-pinned ([VERIFY.md](VERIFY.md),
+[`../releases/v0.1.2/SHA256SUMS`](../releases/v0.1.2/SHA256SUMS)); the
+`v0.1.2` tag and GitHub Release are created at publication, and the
+sections below then point at the v0.1.2 archives. Until then the
+published releases above remain the installable ones.
+
 ## One-line installer (macOS + Linux)
 
 ```sh
 curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh | sh
 ```
 
+> **Next channel (staged):** the `install.sh` on `main` has been updated
+> to pin the staged **v0.1.2** artifacts (macOS arm64/x86_64 and Linux
+> x86_64 — all three platforms at v0.1.2) and is staged as the next
+> installer channel, `install-v3`. The `install-v3` tag is created after
+> the v0.1.2 publication and the one-liner above is repointed in a
+> follow-up commit; until then the published `install-v2` one-liner
+> remains valid and installs the current published releases (macOS
+> v0.1.1, Linux v0.1.0).
+
 `install.sh` (repository root, tag-pinned at `install-v2` — the current
-installer channel; the previous `install-v1` tag remains published and
-immutable) is a POSIX sh script that, for macOS (arm64 and x86_64,
-Rosetta-aware) and Linux (x86_64):
+published installer channel; the previous `install-v1` tag remains
+published and immutable) is a POSIX sh script that, for macOS (arm64 and
+x86_64, Rosetta-aware) and Linux (x86_64):
 
 1. detects the platform and selects the pinned artifact
    (macOS → v0.1.1, Linux → v0.1.0 — the current release per platform);
@@ -156,7 +174,9 @@ Developer-ID signed/notarized build is planned; see
 ## Windows (x86_64) — 0.1.0 (current Windows release)
 
 0.1.1 is macOS-only; the published 0.1.0 Windows artifact remains the
-current Windows release.
+current Windows release. The staged v0.1.2 archive
+(`ltop-v0.1.2-windows-x86_64.zip`) will be the next Windows release at
+publication (checksum in [VERIFY.md](VERIFY.md)).
 
 ```powershell
 # 1. Verify the archive (see VERIFY.md for the expected value)
@@ -196,7 +216,9 @@ publisher. After verifying the SHA-256 checksum, choose *More info* →
 ## Linux (x86_64) — 0.1.0 (current Linux release)
 
 0.1.1 is macOS-only; the published 0.1.0 Linux artifact remains the
-current Linux release.
+current Linux release. The staged v0.1.2 archive
+(`ltop-v0.1.2-linux-x86_64.tar.gz`) will be the next Linux release at
+publication (checksum in [VERIFY.md](VERIFY.md)).
 
 ```sh
 # 1. Verify the archive (see VERIFY.md for the expected value)

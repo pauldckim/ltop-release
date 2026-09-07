@@ -2,6 +2,93 @@
 
 All notable public changes to ltop releases are recorded here.
 
+## 0.1.2 — 2026-09-08 (staged; publication pending)
+
+**Status: staged — not yet published.** The four-platform archives below
+are built, gated, packaged and checksum-pinned
+([`releases/v0.1.2/SHA256SUMS`](releases/v0.1.2/SHA256SUMS)); the `v0.1.2`
+tag and GitHub Release are created at publication. Until then the current
+published releases remain 0.1.1 (macOS) and 0.1.0 (Windows/Linux).
+
+0.1.2 is the first release that ships **all four platforms**: macOS arm64,
+macOS x86_64, Windows x86_64 and Linux x86_64. It adds API key
+authentication and fixes Linux process discovery.
+
+### What's new
+
+- **API key authentication** for llama-server instances started with
+  `--api-key`/`--api-key-file`: configure the key with
+  `--api-key-file <PATH>` (llama.cpp key-file format: one key per line,
+  blank lines and `#` comments skipped, first valid key used) or the
+  `LTOP_API_KEY` environment variable. The raw key is never a CLI
+  argument; every request carries exactly one
+  `Authorization: Bearer <key>` header; an HTTP 401 is reported
+  actionably with the key redacted. Without a key configured, behavior is
+  unchanged from 0.1.1.
+- **Linux process discovery fix:** thread entries are excluded from
+  automatic discovery, so a single multithreaded `llama-server` is one
+  discovery candidate instead of *ambiguous* (two genuinely different
+  `llama-server` processes still report *ambiguous*; the explicit
+  `--pid` path is unchanged).
+
+### Platforms
+
+| Platform | Artifact | Notes |
+|---|---|---|
+| macOS arm64 (Apple Silicon) | `ltop-v0.1.2-macos-arm64.zip` | rebuilt at 0.1.2; **ad-hoc signed** (same as 0.1.1 — required for arm64 launch) |
+| macOS x86_64 (Intel) | `ltop-v0.1.2-macos-x86_64.zip` | rebuilt at 0.1.2; **ad-hoc signed** for consistency |
+| Windows x86_64 | `ltop-v0.1.2-windows-x86_64.zip` | rebuilt at 0.1.2; **unsigned** (no Authenticode yet) |
+| Linux x86_64 | `ltop-v0.1.2-linux-x86_64.tar.gz` | rebuilt at 0.1.2; glibc dynamic build, checksums only |
+
+### Signing status (0.1.2)
+
+Both macOS binaries are **ad-hoc signed** (`Signature=adhoc`) — ad-hoc
+signing is **not** a Developer ID signature: neither binary is
+Developer-ID signed or notarized, so a quarantined first run is still
+blocked by Gatekeeper (verify the SHA-256 first, then the unblock
+procedure in [docs/INSTALL.md](docs/INSTALL.md)). The Windows binary is
+**unsigned** (no Authenticode yet; SmartScreen may show a warning). Linux
+uses checksum verification only. Developer ID / Authenticode / GPG-signed
+sums remain the planned fixes ([docs/DISTRIBUTION.md](docs/DISTRIBUTION.md)
+§4).
+
+### Toolchain
+
+rustc **1.98.0** (the pinned baseline) for the macOS artifacts; rustc
+**1.98.1** for the Windows and Linux artifacts — a recorded deviation
+from the 1.98.0 pin (the exact compiler identity per artifact is recorded
+in [docs/VERIFY.md](docs/VERIFY.md)).
+
+### Verification (public-safe summary)
+
+- Rust test suites per platform: **macOS 441 / Windows 439 / Linux 442
+  tests, 0 failed** (the one-test macOS→Linux delta is the Linux-only
+  multithreaded-discovery regression test; the one-test macOS→Windows
+  delta is the Unix-only key-file permission test); Python certification
+  suite **62** and scripts suite **79**, 0 failed (macOS host). Network
+  tests use loopback mocks only.
+- **M4 arm64 native run:** the shipped arm64 binary was verified on
+  Apple M4 Max hardware (macOS 26.6.2): identity hash (`a8f8ab16…`),
+  Mach-O arm64, minos 11.0, the five system dylibs, ad-hoc signature,
+  `ltop 0.1.2`, native PTY `q` smoke, and 10/10 loopback mock endpoint
+  checks.
+- **Full 33-gate live certification: 33/33 gates PASS** (finalized,
+  300 s soak included) on the Apple M4 Max (macOS 26.6.2, arm64),
+  against a real llama-server (pinned commit, CPU-only build) with the
+  pinned model.
+- Windows ConPTY live certification: **N/A with reason** — the live
+  driver is Unix/PTY-based; the Windows artifact is verified at the
+  build + test + binary-identity level (same status as 0.1.0).
+- All four binaries are **stripped** and built with build-machine paths
+  remapped to a neutral prefix (machine-path byte scan: zero
+  occurrences); deterministic packaging (a second packaging run produced
+  byte-identical archives, fixed 2026-09-08 UTC timestamps).
+- `THIRD_PARTY_NOTICES.md` component inventory unchanged from
+  0.1.0/0.1.1 (same 299-package dependency lock); the SBOM is regenerated
+  for 0.1.2 at [`sbom/ltop-v0.1.2.cdx.json`](sbom/ltop-v0.1.2.cdx.json).
+
+Full checksums and the verification record: [docs/VERIFY.md](docs/VERIFY.md).
+
 ## Installer channel: `install-v2` — 2026-09-07 (published)
 
 **Installer channel, not a product version.** The product releases are the

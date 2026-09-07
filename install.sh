@@ -1,15 +1,17 @@
 #!/bin/sh
 # ltop installer — macOS (arm64 / x86_64) and Linux (x86_64). POSIX sh.
 #
-# Tag-pinned one-line install:
+# Tag-pinned one-line install (once the install-v3 tag exists):
 #
 #   curl --proto '=https' --tlsv1.2 -fsSL \
-#     https://raw.githubusercontent.com/pauldckim/ltop-release/install-v2/install.sh | sh
+#     https://raw.githubusercontent.com/pauldckim/ltop-release/install-v3/install.sh | sh
 #
-# This script is the `install-v2` channel. The previous channel
-# `install-v1` remains published and immutable (superseded, never moved);
-# both channels pin the same product releases (macOS v0.1.1, Linux
-# v0.1.0) — install-v2 hardens the installer itself, not the artifacts.
+# This script is the `install-v3` channel candidate, staged on `main`.
+# The published channels `install-v1` and `install-v2` remain immutable
+# (never moved); the `install-v3` tag is created after the v0.1.2
+# publication and the docs one-liner is repointed in a follow-up commit.
+# v0.1.2 is the current release for all three platforms (macOS
+# arm64/x86_64, Linux x86_64).
 #
 # What it does
 #   - detects the platform (macOS arm64/x86_64, Rosetta-aware; Linux x86_64)
@@ -32,8 +34,8 @@
 #     never followed or overwritten without explicit consent; with consent
 #     only the link itself is removed.
 #   - --uninstall removes the target only when its hash matches a known
-#     ltop binary (all 0.1.0/0.1.1 macOS/Linux hashes); foreign files are
-#     refused.
+#     ltop binary (all 0.1.0/0.1.1/0.1.2 macOS/Linux hashes); foreign
+#     files are refused.
 #   - unsafe prefixes (filesystem root, core system directories) are
 #     rejected. The check runs against the *canonical* prefix: every
 #     symlink component of --prefix is resolved (portably, without
@@ -98,7 +100,7 @@
 
 set -u
 
-INSTALLER_CHANNEL='install-v2'
+INSTALLER_CHANNEL='install-v3'
 REPO_URL='https://github.com/pauldckim/ltop-release'
 LICENSE_URL='https://github.com/pauldckim/ltop-release/blob/main/LICENSE.md'
 DEFAULT_BASE_URL='https://github.com/pauldckim/ltop-release/releases/download'
@@ -110,62 +112,60 @@ PROD_ALLOWED_HOSTS='github.com objects.githubusercontent.com release-assets.gith
 # ---------------------------------------------------------------------------
 # Pinned platform mapping.
 #
-# Values are the published, immutable release artifacts (release-repo
-# releases/v0.1.0/SHA256SUMS, releases/v0.1.1/SHA256SUMS, docs/VERIFY.md):
+# Values are the immutable release artifacts (release-repo
+# releases/v0.1.2/SHA256SUMS, docs/VERIFY.md):
 #
 #   platform      version  archive                          kind
-#   macos-arm64   0.1.1    ltop-v0.1.1-macos-arm64.zip      zip
-#   macos-x86_64  0.1.1    ltop-v0.1.1-macos-x86_64.zip     zip
-#   linux-x86_64  0.1.0    ltop-v0.1.0-linux-x86_64.tar.gz  targz
+#   macos-arm64   0.1.2    ltop-v0.1.2-macos-arm64.zip      zip
+#   macos-x86_64  0.1.2    ltop-v0.1.2-macos-x86_64.zip     zip
+#   linux-x86_64  0.1.2    ltop-v0.1.2-linux-x86_64.tar.gz  targz
 #
-# 0.1.1 is macOS-only; the published 0.1.0 Linux artifact remains the
-# current Linux release.
+# 0.1.2 is the current release for all three platforms; the v0.1.2
+# SHA256SUMS asset is shared by all of them.
 # ---------------------------------------------------------------------------
 
 platform_version() {
     case "$1" in
-        macos-arm64)   printf '0.1.1' ;;
-        macos-x86_64)  printf '0.1.1' ;;
-        linux-x86_64)  printf '0.1.0' ;;
+        macos-arm64)   printf '0.1.2' ;;
+        macos-x86_64)  printf '0.1.2' ;;
+        linux-x86_64)  printf '0.1.2' ;;
         *)             return 1 ;;
     esac
 }
 
 platform_archive() {
     case "$1" in
-        macos-arm64)   printf 'ltop-v0.1.1-macos-arm64.zip' ;;
-        macos-x86_64)  printf 'ltop-v0.1.1-macos-x86_64.zip' ;;
-        linux-x86_64)  printf 'ltop-v0.1.0-linux-x86_64.tar.gz' ;;
+        macos-arm64)   printf 'ltop-v0.1.2-macos-arm64.zip' ;;
+        macos-x86_64)  printf 'ltop-v0.1.2-macos-x86_64.zip' ;;
+        linux-x86_64)  printf 'ltop-v0.1.2-linux-x86_64.tar.gz' ;;
         *)             return 1 ;;
     esac
 }
 
 platform_archive_sha() {
     case "$1" in
-        macos-arm64)   printf '66c97f41f4a0c9919b89f8a003366a36f8e77d79af03ec866dccb3efbaa9fa55' ;;
-        macos-x86_64)  printf '676da4356e00813e35092c8f386daa78ee41cca09a8f033949ca452135e5bdd9' ;;
-        linux-x86_64)  printf 'f940cf94a1023f4764a82f8e4bda5c075a09f1407baccaeeb4527574ad3f8722' ;;
+        macos-arm64)   printf 'd349b64375fb8263011a625c5f585db0930affdf2c0d0c3e2deb268d84780b47' ;;
+        macos-x86_64)  printf '0fe80dfdb36616059a56a645c3d3eeddf1bd5257150e48141fb063b0b77f2c7c' ;;
+        linux-x86_64)  printf 'f11144035a054c0c944f648045a25d5bc68e1def2236b7ed60cc6179bcb56bba' ;;
         *)             return 1 ;;
     esac
 }
 
 platform_binary_sha() {
     case "$1" in
-        macos-arm64)   printf '19a6e42346f05dc37dd00f9ff723408d870237b72dc7a9cd77245069f443401a' ;;
-        macos-x86_64)  printf '00933d50ef9ca133d788f0a1d883f1ab71dd0acacfc6cf9eb0c2b89c4fba6cbd' ;;
-        linux-x86_64)  printf 'e18a3f0e9ea2e61ec5a44d5ab54256b774aec83a7d2ab4cf9e2f0df91daff089' ;;
+        macos-arm64)   printf 'a8f8ab16ec7e37c8121b86d7966c47fa1ba4292933696f068d11a33b6b1a9a0c' ;;
+        macos-x86_64)  printf '24362c464980074810762ec626b80e33aa98bac6743179462bbe5452dce69546' ;;
+        linux-x86_64)  printf '84a84b7c56e399f9178703da71be8894f02a394fef2ce36d1e01f5d3e41414c4' ;;
         *)             return 1 ;;
     esac
 }
 
 # SHA-256 of the published SHA256SUMS release asset for the platform's
-# version (v0.1.1 asset is shared by both macOS platforms).
+# version (the v0.1.2 asset is shared by all three platforms).
 platform_sums_sha() {
     case "$1" in
-        macos-arm64|macos-x86_64)
-            printf '79568789220e644d690bb1ef6c4091f126053a9a8f9670f4046f20775d4e6e12' ;;
-        linux-x86_64)
-            printf '6d5a9a753cdc272cf9284fa8b9ed3ea13f12028847804c3be4e66f01e910821c' ;;
+        macos-arm64|macos-x86_64|linux-x86_64)
+            printf '3a76bbfcc4df41f617fb7149ee74927c5897fae6a67cad40103dfb779ee22850' ;;
         *) return 1 ;;
     esac
 }
@@ -178,10 +178,17 @@ platform_kind() {
     esac
 }
 
-# Every known ltop binary hash (0.1.0 + 0.1.1, macOS + Linux). Used for the
-# "this looks like an older ltop" message and for --uninstall.
+# Every known ltop binary hash (0.1.0 + 0.1.1 + 0.1.2, macOS + Linux).
+# Used for the "this looks like an older ltop" message and for
+# --uninstall.
 _known_ltop_hash_builtin() {
     case "$1" in
+        a8f8ab16ec7e37c8121b86d7966c47fa1ba4292933696f068d11a33b6b1a9a0c)
+            printf 'ltop v0.1.2 macos-arm64' ;;
+        24362c464980074810762ec626b80e33aa98bac6743179462bbe5452dce69546)
+            printf 'ltop v0.1.2 macos-x86_64' ;;
+        84a84b7c56e399f9178703da71be8894f02a394fef2ce36d1e01f5d3e41414c4)
+            printf 'ltop v0.1.2 linux-x86_64' ;;
         19a6e42346f05dc37dd00f9ff723408d870237b72dc7a9cd77245069f443401a)
             printf 'ltop v0.1.1 macos-arm64' ;;
         00933d50ef9ca133d788f0a1d883f1ab71dd0acacfc6cf9eb0c2b89c4fba6cbd)
@@ -262,9 +269,9 @@ Behavior:
   - on Ctrl-C / SIGTERM: cleans up and exits 130 / 143
 
 Pinned artifacts (tag-pinned, immutable):
-  macOS arm64    v0.1.1  ltop-v0.1.1-macos-arm64.zip
-  macOS x86_64   v0.1.1  ltop-v0.1.1-macos-x86_64.zip
-  Linux x86_64   v0.1.0  ltop-v0.1.0-linux-x86_64.tar.gz
+  macOS arm64    v0.1.2  ltop-v0.1.2-macos-arm64.zip
+  macOS x86_64   v0.1.2  ltop-v0.1.2-macos-x86_64.zip
+  Linux x86_64   v0.1.2  ltop-v0.1.2-linux-x86_64.tar.gz
 
 License: proprietary freeware — by installing you accept the license at
 $LICENSE_URL
@@ -497,7 +504,7 @@ if [ -n "${LTOP_INSTALL_TEST_PLATFORM:-}" ]; then
     info "platform (test override): $PLATFORM"
 else
     PLATFORM=$(detect_platform) ||
-        die "unsupported platform: $(uname -s)/$(uname -m). Supported: macOS arm64 (v0.1.1), macOS x86_64 (v0.1.1), Linux x86_64 (v0.1.0). Download manually from $REPO_URL/releases"
+        die "unsupported platform: $(uname -s)/$(uname -m). Supported: macOS arm64 (v0.1.2), macOS x86_64 (v0.1.2), Linux x86_64 (v0.1.2). Download manually from $REPO_URL/releases"
 fi
 
 VERSION=$(platform_version "$PLATFORM")

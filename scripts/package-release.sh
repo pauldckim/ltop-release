@@ -42,10 +42,15 @@
 # Determinism: fixed entry order (sorted), fixed timestamps (release date),
 # no machine-local metadata. Identical inputs produce identical archives.
 #
-# Timestamp constants: the fixed entry timestamps are the release's
-# staging date (UTC), documented here so the archives are reproducible.
-# 0.1.1 (current): 2026-09-06. (0.1.0 used 2026-09-05; the published
-# 0.1.0 archives are immutable and were produced with that date.)
+# Timestamp table: the fixed entry timestamps are the release's staging
+# date (UTC), keyed by version and documented here so the archives are
+# reproducible. Prior versions' entries are immutable (published archives
+# are immutable, docs/013 I1): re-running this script for a prior version
+# with the prior inputs reproduces the published archives' timestamps.
+#   0.1.0: 2026-09-05   0.1.1: 2026-09-06   0.1.2: 2026-09-08
+# A version without a table entry is a usage error (exit 2): every release
+# must register its staging date explicitly (docs/013 step 8.3) rather than
+# inherit a stale default.
 #
 # Exit codes: 0 = ok, 1 = verification/packaging failure, 2 = usage error.
 
@@ -54,10 +59,19 @@ set -u
 # Fixed order (deterministic SHA256SUMS line order and packaging order).
 SUPPORTED_TARGETS="macos-arm64 macos-x86_64 windows-x86_64 linux-x86_64"
 
-# Fixed timestamp for deterministic archives (release staging date, UTC).
-# TS_TOUCH is the touch(1) form of the same instant.
-TS_ZIP="2026,9,6,0,0,0"
-TS_TOUCH="202609060000.00"
+# Fixed timestamp for deterministic archives (release staging date, UTC),
+# selected per version. TS_TOUCH is the touch(1) form of the same instant.
+set_timestamps() {
+    case $1 in
+        0.1.0) TS_ZIP="2026,9,5,0,0,0"; TS_TOUCH="202609050000.00" ;;
+        0.1.1) TS_ZIP="2026,9,6,0,0,0"; TS_TOUCH="202609060000.00" ;;
+        0.1.2) TS_ZIP="2026,9,8,0,0,0"; TS_TOUCH="202609080000.00" ;;
+        *)
+            echo "error: no registered archive timestamp for version: $1" >&2
+            echo "  (add the release's staging date to set_timestamps; prior versions' entries are immutable)" >&2
+            exit 2 ;;
+    esac
+}
 
 # Per-target attributes, derived from the target name.
 target_bin() {
@@ -111,6 +125,8 @@ inputs_dir=$2
 repo_root=$3
 out_dir=$4
 expected_sums=${5:-}
+
+set_timestamps "$version"
 
 for d in "$inputs_dir" "$repo_root"; do
     if [ ! -d "$d" ]; then

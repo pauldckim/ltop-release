@@ -1,0 +1,38 @@
+# ===========================================================================
+# ltop WinGet manifest — DISABLED TEMPLATE (not submittable as-is)
+#
+# Part of the 0.1.2 multi-file manifest set (version / defaultLocale /
+# installer) under winget/manifests/p/pauldckim/ltop/0.1.2/, named after
+# the current winget-pkgs convention (version-less file names, the version
+# carried by the directory; the en-US file uses the `locale.` infix and
+# ManifestType `defaultLocale`). Named `pauldckim.ltop.yaml.template`
+# (not `.yaml`) so winget tooling and the microsoft/winget-pkgs validation
+# pipeline never pick it up.
+#
+# Generated from the 0.1.0 singleton template
+# (pauldckim.ltop.0.1.0.yaml.template, docs/009 §2) with:
+#   PackageVersion: 0.1.2
+#   InstallerUrl:   the scheduled v0.1.2 GitHub Release asset URL
+#   InstallerSha256: 283cab4b15969a44ca15fabee2faa028ae42d83b1dae27343d63704c29e1f86c
+#                   (the staged ltop-v0.1.2-windows-x86_64.zip, pinned in
+#                   releases/v0.1.2/SHA256SUMS)
+#
+# The 0.1.2 Windows binary is NOT Authenticode-signed (unsigned status,
+# docs/VERIFY.md); an unsigned portable exe may be flagged by
+# antivirus/SmartScreen during winget-pkgs review. Authenticode signing is
+# the planned prerequisite for submission (docs/DISTRIBUTION.md §4).
+#
+# To submit (future): promote the three files to
+#   manifests/p/pauldckim/ltop/0.1.2/pauldckim.ltop.yaml
+#   manifests/p/pauldckim/ltop/0.1.2/pauldckim.ltop.locale.en-US.yaml
+#   manifests/p/pauldckim/ltop/0.1.2/pauldckim.ltop.installer.yaml
+# in a clone of microsoft/winget-pkgs (after the v0.1.2 GitHub Release
+# exists), re-verify the hash against the published asset, run
+# `winget validate`, and open a pull request.
+# ===========================================================================
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.12.0.schema.json
+PackageIdentifier: pauldckim.ltop
+PackageVersion: 0.1.2
+DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.12.0

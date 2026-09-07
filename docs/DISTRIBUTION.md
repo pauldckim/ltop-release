@@ -113,6 +113,24 @@ Native installer formats therefore add risk without adding capability:
 > (`scripts/package-release.sh`) gained `macos-arm64` support with
 > target attributes derived from the target name (binary name, archive
 > extension, platform line) instead of a hardcoded target list.
+>
+> **0.1.2 record (staged 2026-09-08, publication pending):** 0.1.2 ships
+> all four platforms — steps 1–7 were performed for `macos-arm64`,
+> `macos-x86_64` (rustc 1.98.0 pinned, ad-hoc signed per §4),
+> `windows-x86_64` and `linux-x86_64` (rustc 1.98.1 — recorded
+> deviation, exact version per artifact in VERIFY.md; unsigned). The
+> staging binaries were verified by hash after transfer and before
+> packaging; the four archives are deterministic (second run
+> byte-identical, fixed 2026-09-08 UTC timestamps) and pinned in
+> `releases/v0.1.2/SHA256SUMS`. Step 8 (tag + GitHub Release) is
+> **pending** (user-gated); the cask (staged, pushed after the release
+> exists), the WinGet 0.1.2 set (staged, no PR before publication) and
+> the installer mapping (staged as the `install-v3` channel candidate)
+> are prepared per §5. The packaging script's fixed timestamps became a
+> version-keyed table (0.1.0 → 2026-09-05, 0.1.1 → 2026-09-06,
+> 0.1.2 → 2026-09-08; prior entries immutable, unknown version is a
+> usage error) — re-running it for 0.1.1 from the prior inputs
+> reproduces the published 0.1.1 archives byte-for-byte.
 
 ### 3.1 Public-safe helper scripts
 
@@ -124,6 +142,7 @@ shell tests under `scripts/tests/` (synthetic fixtures only; the tests
 never touch the real release data):
 
 ```sh
+sh scripts/tests/test-package-release.sh
 sh scripts/tests/test-release-check.sh
 sh scripts/tests/test-cask-update.sh
 sh scripts/tests/test-install.sh
@@ -131,11 +150,12 @@ sh scripts/tests/test-install.sh
 
 | Script | Purpose |
 |---|---|
-| `install.sh` (repo root) | one-line installer, tag-pinned at `install-v2` (§5.1) |
+| `install.sh` (repo root) | one-line installer; the published channel is `install-v2` (§5.1), the `install-v3` candidate (v0.1.2 mapping) is staged on `main` |
 | `scripts/verify-release.sh` / `verify-release.ps1` | verify a `SHA256SUMS` file against local archives (macOS/Linux, Windows) |
-| `scripts/package-release.sh` | package prebuilt binaries into deterministic release archives |
+| `scripts/package-release.sh` | package prebuilt binaries into deterministic release archives (version-keyed timestamp table: 0.1.0 → 2026-09-05, 0.1.1 → 2026-09-06, 0.1.2 → 2026-09-08; unknown version is a usage error) |
 | `scripts/release-check.sh` | pre-publish gate: checksums, archive shape, cask mirror, SBOM, changelog, forbidden-content scan, tag state |
 | `scripts/cask-update.sh` | generate the tap cask and the template mirror from one source (version, per-arch SHA-256, signing status) |
+| `scripts/tests/test-package-release.sh` | deterministic synthetic-fixture tests for `package-release.sh` (timestamp table, shape, modes, determinism, error paths) |
 | `scripts/tests/test-install.sh` | deterministic loopback-fixture tests for `install.sh` |
 
 `release-check.sh` (exit 0 = all executed checks PASS, 1 = any FAIL,
@@ -192,32 +212,36 @@ diff, and a placeholder-token scan. The script never pushes the tap;
 pushing the cask stays a separate, recorded step (after the GitHub
 Release exists, so the cask URL resolves).
 
-**WinGet helper: not implemented (deferred).** The Windows artifact is
-not part of the current release cycle (0.1.1 is macOS-only; the 0.1.0
-Windows asset is unchanged), so `winget-update.ps1` is not provided
-yet. The manifest template in `winget/` remains manually maintained
-until a Windows release needs it.
+**WinGet helper: not implemented (deferred).** `winget-update.ps1` is
+not provided yet; the 0.1.2 three-file manifest set under
+`winget/manifests/p/pauldckim/ltop/0.1.2/` was generated manually from
+the 0.1.0 singleton template (version, scheduled asset URL, staged
+archive hash substituted; current winget-pkgs naming convention with
+`ManifestType: defaultLocale` for the en-US file) and passed
+`winget validate` on a Windows host (2026-09-08). When the helper is
+implemented it must follow the same public-safe rules: generate the
+manifest set from the template, refuse on any remaining placeholder,
+and never submit/PR/push.
 
 ## 4. Signing (status and plan)
 
-**Current (0.1.1): macOS ad-hoc signed; Windows/Linux (0.1.0) unsigned.**
-The 0.1.1 macOS binaries are **ad-hoc signed** (`Signature=adhoc`): the
-arm64 binary must carry at least an ad-hoc signature to launch on Apple
-Silicon (a kernel requirement, not a trust requirement), and the x86_64
-binary is ad-hoc signed for consistency with the arm64 artifact (the
-0.1.0 x86_64 binary was unsigned; the 0.1.0 → 0.1.1 x86_64 delta is the
-version string plus this signature). Ad-hoc signing is **not** a
-Developer ID signature: neither binary passes Gatekeeper for quarantined
-downloads, and the unblock procedure in [INSTALL.md](INSTALL.md) applies
-unchanged. The 0.1.0 Windows binary remains unsigned (no Authenticode);
-Linux uses checksums only. See [VERIFY.md](VERIFY.md) for what this means
-per platform.
+**Current (0.1.2 staged): macOS ad-hoc signed; Windows/Linux unsigned.**
+The 0.1.2 macOS binaries are **ad-hoc signed** (`Signature=adhoc`), the
+same status as 0.1.1: the arm64 binary must carry at least an ad-hoc
+signature to launch on Apple Silicon (a kernel requirement, not a trust
+requirement), and the x86_64 binary is ad-hoc signed for consistency.
+Ad-hoc signing is **not** a Developer ID signature: neither binary
+passes Gatekeeper for quarantined downloads, and the unblock procedure
+in [INSTALL.md](INSTALL.md) applies unchanged. The 0.1.2 Windows binary
+is unsigned (no Authenticode yet, same as 0.1.0); the 0.1.2 Linux
+binary uses checksums only. See [VERIFY.md](VERIFY.md) for what this
+means per platform.
 
 The F1 ordering (build → functional re-verify → strip → sign → final
-hash/scan) was followed for 0.1.1: stripping invalidates signatures, so
-signing was the last step and the shipped hashes are the post-signing
-hashes; both binaries were functionally re-verified after signing
-(`--version`, PTY `q` smoke, linkage, machine-path scan).
+hash/scan) was followed for 0.1.2 (and 0.1.1): stripping invalidates
+signatures, so signing was the last step and the shipped hashes are the
+post-signing hashes; the macOS binaries were functionally re-verified
+after signing (`--version`, PTY `q` smoke, linkage, machine-path scan).
 
 **Why self-signed certificates do not satisfy public trust:**
 
@@ -253,13 +277,13 @@ storage and is referenced only by name in release notes.
 
 - **`homebrew/core` formula: not possible.** Core formulas must build from
   DFSG-compatible open-source code; ltop is proprietary and binary-only.
-- **Official `homebrew/cask`: blocked for 0.1.0/0.1.1.** A cask is the
-  right *type* for proprietary binary-only software, but acceptance
+- **Official `homebrew/cask`: blocked for 0.1.0/0.1.1/0.1.2.** A cask is
+  the right *type* for proprietary binary-only software, but acceptance
   requires (a) macOS artifacts that pass Gatekeeper on a default
   configuration — i.e. **Developer ID signature + notarization** (an
-  ad-hoc signature, as in 0.1.1, does not qualify) — (b) public presence
-  / notability thresholds, and (c) maintainer discretion. None of these
-  are met yet.
+  ad-hoc signature, as in 0.1.1/0.1.2, does not qualify) — (b) public
+  presence / notability thresholds, and (c) maintainer discretion. None
+  of these are met yet.
 - **Own third-party tap: chosen route (live).** The tap
   `pauldckim/tap` (repository `pauldckim/homebrew-tap`) carries a cask
   that installs the macOS binary from this repository's GitHub Release.
@@ -286,26 +310,48 @@ storage and is referenced only by name in release notes.
   the artifacts pass Gatekeeper, the caveats become unnecessary and the
   official `homebrew/cask` route becomes realistic as well. The live
   cask (`Casks/ltop.rb` in the tap repository) is mirrored as a
-  reference at `homebrew/Casks/ltop.rb.template` (deliberately **not** a
-  `.rb` file, so `brew` will never load it); details in
-  `homebrew/README.md`. Since 2026-09-07 both files are generated by
-  `scripts/cask-update.sh` from one source (version, per-arch SHA-256,
-  signing status), so the mirror cannot drift and no stale signing note
-  can remain in the template header (§3.1).
+   reference at `homebrew/Casks/ltop.rb.template` (deliberately **not**
+   a `.rb` file, so `brew` will never load it); details in
+   `homebrew/README.md`. Since 2026-09-07 both files are generated by
+   `scripts/cask-update.sh` from one source (version, per-arch SHA-256,
+   signing status), so the mirror cannot drift and no stale signing note
+   can remain in the template header (§3.1). **0.1.2 (staged 2026-09-08):**
+   both files were regenerated for 0.1.2 (per-arch hashes of the staged
+   archives, ad-hoc signing status) and pass `ruby -c`, stub-DSL
+   evaluation for both simulated architectures, and `brew style` /
+   `brew audit` / `brew info` (Homebrew 6.0.22). The tap cask is
+   committed and pushed **after** the v0.1.2 GitHub Release exists, so
+   the cask URL resolves (the published tap keeps serving 0.1.1 until
+   then).
 
-### One-line installer (tag `install-v2`)
+### One-line installer (published channel `install-v2`; `install-v3` staged)
 
 `install.sh` (repository root) is the curl|sh channel for macOS
 (arm64/x86_64) and Linux (x86_64). It is published on its own **installer
-channel tag** `install-v2` (current; `install-v1` is superseded but
-remains published and immutable) — deliberately *not* a product
-`vX.Y.Z` tag:
+channel tag** `install-v2` (current published channel; `install-v1` is
+superseded but remains published and immutable) — deliberately *not* a
+product `vX.Y.Z` tag:
 
-- **Why a separate tag:** the product tags (`v0.1.0`, `v0.1.1`) are the
-  immutable release tags (I1) and predate the installer; the installer
-  pins the *current* artifact per platform (macOS → v0.1.1, Linux →
-  v0.1.0) and must be updatable when a new platform version becomes
-  current without touching any product tag or release asset.
+- **Why a separate tag:** the product tags (`v0.1.0`, `v0.1.1`,
+  `v0.1.2`) are the immutable release tags (I1) and predate the
+  installer; the installer pins the *current* artifact per platform
+  (published `install-v2`: macOS → v0.1.1, Linux → v0.1.0) and must be
+  updatable when a new platform version becomes current without touching
+  any product tag or release asset.
+- **0.1.2 mapping (staged as `install-v3`):** v0.1.2 becomes current for
+  all three platforms at publication, so the `install.sh` on `main` was
+  updated to pin the v0.1.2 artifacts (macOS arm64/x86_64 + Linux
+  x86_64, the v0.1.2 `SHA256SUMS` shared by all three) and to add the
+  three v0.1.2 binary hashes to the known-ltop set used by
+  `--uninstall` and the existing-file message. This staged script is the
+  **`install-v3` channel candidate**: the `install-v3` tag is created
+  after the v0.1.2 publication (the new immutable channel), and the
+  one-liner in README/INSTALL/VERIFY is repointed in a follow-up commit;
+  until then the published `install-v2` one-liner remains valid and
+  installs the current published releases. The updated script passes its
+  deterministic test suite on a macOS host (144 tests, 0 failed, 2
+  skipped — wget absent) and a Linux host (149 tests, 0 failed, 0
+  skipped), loopback fixtures only.
 - **Immutability:** once a channel tag is pushed it is never moved or
   mutated. `install-v1` keeps working for users who already copied it.
   A changed installer ships as the next channel tag (`install-v3`, …)
@@ -382,23 +428,31 @@ remains published and immutable) — deliberately *not* a product
   (<https://aka.ms/winget-manifest.singleton.1.12.0.schema.json>) and
   existing winget-pkgs packages (for example `Docker.DockerCLI`). A signed
   payload is **not** a schema requirement for this route.
-- The template under `winget/manifests/` is a **future-ready singleton
-  portable-ZIP manifest** (`.yaml.template`, deliberately not a `.yaml` so
-  tooling never picks it up). It is validated against the official
-  singleton schema v1.12.0 and carries the real v0.1.0 archive URL and the
+- The 0.1.0 template under `winget/manifests/` is a **future-ready
+  singleton portable-ZIP manifest** (`.yaml.template`, deliberately not a
+  `.yaml` so tooling never picks it up), validated against the official
+  singleton schema v1.12.0, carrying the real v0.1.0 archive URL and the
   SHA-256 of the published `ltop-v0.1.0-windows-x86_64.zip` (pinned in
   `releases/v0.1.0/SHA256SUMS`).
-- It is **not submittable as-is** for practical reasons, not schema
-  reasons:
-  1. the 0.1.0 Windows binary is unsigned; an unsigned portable exe may be
-     flagged by AV/SmartScreen during review (see §4).
-- **Route:** once the binary is signed (recommended before submission),
-  Authenticode-signed), promote the template to
-  `manifests/p/pauldckim/ltop/0.1.0/pauldckim.ltop.0.1.0.yaml` (or the
-  multi-file `version`/`locale`/`installer` set) in a `microsoft/winget-pkgs`
-  clone, re-verify the hash against the published asset, run
-  `winget validate`, and open a pull request. Publisher `pauldckim`,
-  package identifier `pauldckim.ltop`.
+- **0.1.2 (staged 2026-09-08):** the three-file manifest set under
+  `winget/manifests/p/pauldckim/ltop/0.1.2/` (version / `defaultLocale`
+  en-US / installer, current winget-pkgs naming convention; all
+  `.yaml.template`) was generated from the 0.1.0 template with the
+  scheduled v0.1.2 asset URL and the staged archive hash
+  (`283cab4b…`, pinned in `releases/v0.1.2/SHA256SUMS`). `winget
+  validate` passed on a Windows host (winget v1.29.290, 2026-09-08:
+  "Manifest validation succeeded", no warnings). It is **not
+  submittable yet** for practical reasons, not schema reasons: the
+  v0.1.2 GitHub Release does not exist yet (the `InstallerUrl` would
+  404) and the 0.1.2 Windows binary is unsigned (see §4).
+- **Route:** once the v0.1.2 release exists (and, recommended before
+  submission, the binary is Authenticode-signed), promote the set to
+  `manifests/p/pauldckim/ltop/0.1.2/` (`pauldckim.ltop.yaml`,
+  `pauldckim.ltop.locale.en-US.yaml`, `pauldckim.ltop.installer.yaml`)
+  in a `microsoft/winget-pkgs` clone, re-verify the hash against the
+  published asset, run `winget validate`, and open a pull request
+  (user-gated). Publisher `pauldckim`, package identifier
+  `pauldckim.ltop`.
 
 ### Linux
 
@@ -406,8 +460,8 @@ Direct archive + checksums (this repository / GitHub Releases) is the
 channel, with the one-line installer (§5.1) as the convenience route.
 The own-tap cask is macOS-only (arm64 + x86_64 since 0.1.1; 0.1.0 was
 x86_64 only via `depends_on arch: :x86_64`), so Linuxbrew users keep
-using the archive route (the published 0.1.0 artifact); distro
-repositories are out of scope.
+using the archive route (the published 0.1.0 artifact until the staged
+0.1.2 archive is published); distro repositories are out of scope.
 
 ## 6. What is (not) in a release
 

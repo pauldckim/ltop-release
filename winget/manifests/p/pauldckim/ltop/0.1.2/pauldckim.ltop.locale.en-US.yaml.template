@@ -1,0 +1,34 @@
+# ===========================================================================
+# ltop WinGet manifest — DISABLED TEMPLATE (not submittable as-is)
+#
+# Part of the 0.1.2 multi-file manifest set (version / defaultLocale /
+# installer) under winget/manifests/p/pauldckim/ltop/0.1.2/. Named
+# `pauldckim.ltop.locale.en-US.yaml.template` (not `.yaml`) so winget
+# tooling and the microsoft/winget-pkgs validation pipeline never pick it
+# up. See the version manifest template in this directory for the
+# generation record and the unsigned-binary caveat.
+#
+# The default-locale manifest (en-US = the version manifest's
+# DefaultLocale) uses ManifestType `defaultLocale`; additional locales use
+# ManifestType `locale` (the plain locale schema).
+# ===========================================================================
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
+PackageIdentifier: pauldckim.ltop
+PackageVersion: 0.1.2
+PackageLocale: en-US
+Publisher: pauldckim
+PackageName: ltop
+PackageUrl: https://github.com/pauldckim/ltop-release
+License: Proprietary freeware (free use and unmodified redistribution; no sale, no modification, no reverse engineering)
+LicenseUrl: https://github.com/pauldckim/ltop-release/blob/main/LICENSE.md
+ShortDescription: Single-binary TUI monitor for llama.cpp llama-server and its local process
+Description: >-
+  ltop is a single-binary, keyboard-only terminal dashboard that monitors a
+  local llama.cpp llama-server and the OS process behind it, read-only. It
+  polls the server's /metrics, /slots and /props endpoints plus local
+  process CPU/memory. Proprietary freeware: free to use and to redistribute
+  unmodified; no sale, no modification, no reverse engineering. Source code
+  is not published.
+ReleaseNotesUrl: https://github.com/pauldckim/ltop-release/releases/tag/v0.1.2
+ManifestType: defaultLocale
+ManifestVersion: 1.12.0

@@ -1,12 +1,14 @@
-# Third-Party Notices — ltop 0.1.1
+# Third-Party Notices — ltop 0.1.2
 
-**Date:** 2026-09-05 (notice bundle updated 2026-09-06)
-**Applies to:** the ltop 0.1.1 release binaries (macOS arm64, macOS
-x86_64). The component inventory is unchanged from 0.1.0 (same
-299-package dependency lock; the 0.1.1 Rust source delta is the version
-bump only). The published 0.1.0 archives (macOS x86_64, Windows x86_64,
-Linux x86_64) carry the 0.1.0-dated copy of this file, which remains the
-record for those binaries.
+**Date:** 2026-09-05 (notice bundle updated 2026-09-08)
+**Applies to:** the ltop 0.1.2 release binaries (macOS arm64, macOS
+x86_64, Windows x86_64, Linux x86_64). The component inventory is
+unchanged from 0.1.0/0.1.1 (same 299-package dependency lock; the 0.1.2
+Rust source delta is the version bump plus two feature changes that add
+no dependencies). The published 0.1.1 archives (macOS arm64, macOS
+x86_64) carry the 0.1.1-dated copy of this file, and the published 0.1.0
+archives (macOS x86_64, Windows x86_64, Linux x86_64) carry the
+0.1.0-dated copy; those remain the records for those binaries.
 
 The ltop binaries statically link the third-party components listed below.
 This file is the copyright and license notice required by those components'

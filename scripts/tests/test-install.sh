@@ -308,7 +308,7 @@ expect_rc "T1 install.sh passes sh -n" 0 "$tmp/out-t1" $?
 env sh "$INSTALL" --help > "$tmp/out-t2" 2>&1
 expect_rc "T2 --help exits 0" 0 "$tmp/out-t2" $?
 expect_grep "T2 help shows usage" "$tmp/out-t2" 'Usage: sh install.sh'
-expect_grep "T2 help names the channel" "$tmp/out-t2" 'channel: install-v2'
+expect_grep "T2 help names the channel" "$tmp/out-t2" 'channel: install-v3'
 expect_grep "T2 help shows the license link" "$tmp/out-t2" 'github.com/pauldckim/ltop-release/blob/main/LICENSE.md'
 
 # =============================================================================
@@ -338,14 +338,14 @@ expect_grep "T4 uses the GitHub base URL" "$tmp/out-t4a" 'https://github.com/pau
 t4plat=$(sed -n 's/^ltop: platform: //p' "$tmp/out-t4a" | head -1)
 case "$t4plat" in
     macos-arm64)
-        t4arch='ltop-v0.1.1-macos-arm64.zip'
-        t4sha='66c97f41f4a0c9919b89f8a003366a36f8e77d79af03ec866dccb3efbaa9fa55' ;;
+        t4arch='ltop-v0.1.2-macos-arm64.zip'
+        t4sha='d349b64375fb8263011a625c5f585db0930affdf2c0d0c3e2deb268d84780b47' ;;
     macos-x86_64)
-        t4arch='ltop-v0.1.1-macos-x86_64.zip'
-        t4sha='676da4356e00813e35092c8f386daa78ee41cca09a8f033949ca452135e5bdd9' ;;
+        t4arch='ltop-v0.1.2-macos-x86_64.zip'
+        t4sha='0fe80dfdb36616059a56a645c3d3eeddf1bd5257150e48141fb063b0b77f2c7c' ;;
     linux-x86_64)
-        t4arch='ltop-v0.1.0-linux-x86_64.tar.gz'
-        t4sha='f940cf94a1023f4764a82f8e4bda5c075a09f1407baccaeeb4527574ad3f8722' ;;
+        t4arch='ltop-v0.1.2-linux-x86_64.tar.gz'
+        t4sha='f11144035a054c0c944f648045a25d5bc68e1def2236b7ed60cc6179bcb56bba' ;;
     *)
         t4arch='' ;;
 esac
@@ -375,9 +375,9 @@ t4b_out=$(sh -c '
             "$(platform_archive_sha "$p")" "$(platform_binary_sha "$p")" \
             "$(platform_sums_sha "$p")" "$(platform_kind "$p")"
     done' _ "$t4b_fns")
-t4b_want_macos_arm64='macos-arm64|0.1.1|ltop-v0.1.1-macos-arm64.zip|66c97f41f4a0c9919b89f8a003366a36f8e77d79af03ec866dccb3efbaa9fa55|19a6e42346f05dc37dd00f9ff723408d870237b72dc7a9cd77245069f443401a|79568789220e644d690bb1ef6c4091f126053a9a8f9670f4046f20775d4e6e12|zip'
-t4b_want_macos_x86_64='macos-x86_64|0.1.1|ltop-v0.1.1-macos-x86_64.zip|676da4356e00813e35092c8f386daa78ee41cca09a8f033949ca452135e5bdd9|00933d50ef9ca133d788f0a1d883f1ab71dd0acacfc6cf9eb0c2b89c4fba6cbd|79568789220e644d690bb1ef6c4091f126053a9a8f9670f4046f20775d4e6e12|zip'
-t4b_want_linux_x86_64='linux-x86_64|0.1.0|ltop-v0.1.0-linux-x86_64.tar.gz|f940cf94a1023f4764a82f8e4bda5c075a09f1407baccaeeb4527574ad3f8722|e18a3f0e9ea2e61ec5a44d5ab54256b774aec83a7d2ab4cf9e2f0df91daff089|6d5a9a753cdc272cf9284fa8b9ed3ea13f12028847804c3be4e66f01e910821c|targz'
+t4b_want_macos_arm64='macos-arm64|0.1.2|ltop-v0.1.2-macos-arm64.zip|d349b64375fb8263011a625c5f585db0930affdf2c0d0c3e2deb268d84780b47|a8f8ab16ec7e37c8121b86d7966c47fa1ba4292933696f068d11a33b6b1a9a0c|3a76bbfcc4df41f617fb7149ee74927c5897fae6a67cad40103dfb779ee22850|zip'
+t4b_want_macos_x86_64='macos-x86_64|0.1.2|ltop-v0.1.2-macos-x86_64.zip|0fe80dfdb36616059a56a645c3d3eeddf1bd5257150e48141fb063b0b77f2c7c|24362c464980074810762ec626b80e33aa98bac6743179462bbe5452dce69546|3a76bbfcc4df41f617fb7149ee74927c5897fae6a67cad40103dfb779ee22850|zip'
+t4b_want_linux_x86_64='linux-x86_64|0.1.2|ltop-v0.1.2-linux-x86_64.tar.gz|f11144035a054c0c944f648045a25d5bc68e1def2236b7ed60cc6179bcb56bba|84a84b7c56e399f9178703da71be8894f02a394fef2ce36d1e01f5d3e41414c4|3a76bbfcc4df41f617fb7149ee74927c5897fae6a67cad40103dfb779ee22850|targz'
 t4b_got_arm64=$(printf '%s\n' "$t4b_out" | sed -n '1p')
 t4b_got_x86_64=$(printf '%s\n' "$t4b_out" | sed -n '2p')
 t4b_got_linux=$(printf '%s\n' "$t4b_out" | sed -n '3p')
