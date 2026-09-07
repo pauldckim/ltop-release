@@ -328,7 +328,10 @@ expect_grep "T7 changelog FAIL" 'FAIL changelog'
 
 repo8="$fixture_root/repo-t8"
 cp -R "$fixture_root/repo" "$repo8"
-printf 'internal host note 10.99.0.7 here\n' > "$repo8/notes.txt"
+# fixture content is assembled at runtime so the forbidden literal does
+# not appear in this (tracked) test file and trip the scan it tests
+synthetic_ip="10.99.0"
+printf 'internal host note %s.7 here\n' "$synthetic_ip" > "$repo8/notes.txt"
 git -C "$repo8" add notes.txt
 git -C "$repo8" -c user.name=test -c user.email=test@example.invalid commit -qm notes
 expect_rc "T8 file-supplied pattern hit exits 1" 1 sh "$release_check" 9.9.9 "$repo8/dist/v9.9.9" "$repo8" "" "" "$fixture_root/patterns.txt"
@@ -337,7 +340,9 @@ expect_grep "T8 forbidden names the file" 'notes.txt'
 
 repo8b="$fixture_root/repo-t8b"
 cp -R "$fixture_root/repo" "$repo8b"
-printf 'BEGIN RSA PRIVATE KEY\n' > "$repo8b/leak.txt"
+keymat='BEGIN RSA PRIV'
+keymat="${keymat}ATE KEY"
+printf '%s\n' "$keymat" > "$repo8b/leak.txt"
 git -C "$repo8b" add leak.txt
 git -C "$repo8b" -c user.name=test -c user.email=test@example.invalid commit -qm leak
 expect_rc "T8b built-in pattern hit exits 1" 1 sh "$release_check" 9.9.9 "$repo8b/dist/v9.9.9" "$repo8b"

@@ -159,9 +159,13 @@ built-in forbidden patterns (machine-local path prefixes, VM directory
 names, machine-local report/log file names, private-key material) nor
 the EREs from `forbidden_patterns_file` (e.g. internal IP ranges —
 passed as an argument, never committed here), and no tracked file name
-carries a secret/signing extension; (7) the tag `v<version>` does not
-exist yet (a published version is immutable, so the gate fails by
-design when run against an already-tagged version).
+carries a secret/signing extension. The built-in pattern literals are
+split across string concatenations in the helper's source so the
+helper does not trip its own scan (the runtime patterns file carries
+the full patterns; the deterministic tests assemble their fixture
+strings the same way); (7) the tag `v<version>` does not exist yet (a
+published version is immutable, so the gate fails by design when run
+against an already-tagged version).
 
 `cask-update.sh` (exit 0 = generated + self-checked, 1 = self-check
 failed, 2 = usage error):

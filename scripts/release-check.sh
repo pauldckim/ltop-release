@@ -399,14 +399,17 @@ fi
 
 # Built-in patterns: safe to hardcode (no internal values). Internal IP
 # ranges and other site-specific patterns come from forbidden_patterns_file.
-cat > "$workdir/patterns" <<'PATTERNS'
-/Users/
-C:[\\/]Users[\\/]
-ltop-vm
-cert-[^ ]*\.json
-server-[^ ]*\.log
-BEGIN [A-Z ]*PRIVATE KEY
-PATTERNS
+# The literals are split across string concatenations so that this file's
+# own pattern definitions do not trip the scan; the patterns file written
+# below carries the full, unsplit patterns.
+{
+    printf '%s\n' '/Use''rs/'
+    printf '%s\n' 'C:[\\/]Use''rs[\\/]'
+    printf '%s\n' 'ltop-''vm'
+    printf '%s\n' 'cert-[^ ]*\.j''son'
+    printf '%s\n' 'server-[^ ]*\.l''og'
+    printf '%s\n' 'BEGIN [A-Z ]*PRIV''ATE KEY'
+} > "$workdir/patterns"
 
 if [ -n "$patterns_file" ]; then
     sed -n '/^[^#[:space:]]/p' "$patterns_file" >> "$workdir/patterns"
