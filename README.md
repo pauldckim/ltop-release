@@ -91,6 +91,41 @@ machine-local paths are embedded in the shipped binaries (see
 
 ## Installation
 
+**One-line installer (macOS arm64/x86_64 and Linux x86_64):**
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v1/install.sh | sh
+```
+
+The installer is **tag-pinned** (`install-v1`): the script and the release
+artifacts it installs are immutable. It detects your platform (Rosetta-aware
+on macOS), downloads the pinned archive over HTTPS only, verifies the
+archive, the release `SHA256SUMS` file and the extracted binary against
+embedded SHA-256 values, and installs atomically to
+`$HOME/.local/bin/ltop` — no sudo, no shell rc changes, no services.
+Re-running it is a no-op when the expected binary is already installed; it
+refuses to replace a different file without `--force` (or an interactive
+yes), and `--uninstall` removes only files whose hash matches a known ltop
+binary. Options: `--prefix DIR`, `--force`, `--uninstall`, `--dry-run`,
+`--quiet`, `--help`.
+
+> **Review before you pipe.** `curl | sh` executes whatever the URL serves
+> at that moment. The tag pin makes the script immutable, but the review
+> alternative is the stronger habit: fetch the script first, read it (it is
+> short), then run it — or verify its SHA-256 against
+> [docs/VERIFY.md](docs/VERIFY.md) before executing:
+>
+> ```sh
+> curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v1/install.sh -o /tmp/ltop-install.sh
+> shasum -a 256 /tmp/ltop-install.sh   # compare with docs/VERIFY.md
+> sh /tmp/ltop-install.sh
+> ```
+>
+> The installer's own security properties (HTTPS-only, embedded hashes,
+> redirect host restriction, atomic install, refusal semantics) are
+> documented in [docs/INSTALL.md](docs/INSTALL.md) and
+> [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) §5.1.
+
 **macOS (both architectures) with Homebrew (one line):**
 
 ```sh
@@ -252,6 +287,8 @@ THIRD_PARTY_NOTICES.md  self-contained third-party notices: component
 third-party/licenses/   canonical SPDX license texts (supplemental)
 sbom/                   CycloneDX SBOM (generated from the dependency lock)
 releases/<ver>/SHA256SUMS  tracked checksum manifest per release
+install.sh              one-line installer (tag-pinned at install-v1;
+                        macOS + Linux, HTTPS-only, hash-verified, atomic)
 docs/                   INSTALL, VERIFY, SECURITY, DISTRIBUTION
 assets/screenshots/     dashboard screenshots (real Terminal captures
                         against a local mock server)
@@ -261,4 +298,5 @@ winget/                 WinGet manifest template (disabled until published/signe
 scripts/                public-safe release helpers (packaging, checksum
                         verification, pre-publish gate, cask generation)
                         + deterministic tests under scripts/tests/
+                        (incl. test-install.sh for the installer)
 ```

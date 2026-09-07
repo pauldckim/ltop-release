@@ -22,7 +22,53 @@ after publication and verified byte-for-byte against the staged artifacts.
 (`vX.Y.Z`) with a GitHub Release attached; the archives + `SHA256SUMS`
 become release assets and are **never modified in place** — a changed
 artifact means a new version (or a new release with the old one
-superseded). See [DISTRIBUTION.md](DISTRIBUTION.md) §1 and §3.
+superseded). The one-line installer lives on its own channel tag
+(`install-v1`, also immutable) and is documented in
+[DISTRIBUTION.md](DISTRIBUTION.md) §5.1. See
+[DISTRIBUTION.md](DISTRIBUTION.md) §1 and §3.
+
+## Installer (tag `install-v1`)
+
+The one-line installer is pinned at the tag
+[`install-v1`](https://github.com/pauldckim/ltop-release/tree/install-v1)
+(installer channel — **not** a product version; the `vX.Y.Z` product tags
+are unchanged and immutable). The pinned script:
+
+| File | SHA-256 |
+|---|---|
+| `install.sh` (at `install-v1`) | `bee9538e81266d268bdd8765abf52a1686fe017d6bd0383b0bf7eaf54d280b81` |
+
+Verify the script before executing it (review-first alternative to
+`curl | sh`):
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL \
+  https://raw.githubusercontent.com/pauldckim/ltop-release/install-v1/install.sh \
+  -o /tmp/ltop-install.sh
+# macOS
+shasum -a 256 /tmp/ltop-install.sh
+# Linux
+sha256sum /tmp/ltop-install.sh
+# expected: bee9538e81266d268bdd8765abf52a1686fe017d6bd0383b0bf7eaf54d280b81
+sh /tmp/ltop-install.sh
+```
+
+The script embeds the SHA-256 values of the pinned artifacts (archive,
+`SHA256SUMS` file, extracted binary) for every supported platform; the
+embedded archive hashes are the published release hashes below, and the
+embedded `SHA256SUMS` file hashes are:
+
+| File | SHA-256 |
+|---|---|
+| `SHA256SUMS` of the v0.1.1 release | `79568789220e644d690bb1ef6c4091f126053a9a8f9670f4046f20775d4e6e12` |
+| `SHA256SUMS` of the v0.1.0 release | `6d5a9a753cdc272cf9284fa8b9ed3ea13f12028847804c3be4e66f01e910821c` |
+
+The installer's deterministic test suite
+(`scripts/tests/test-install.sh`, loopback fixtures only) covers the
+platform mapping, all hash checks, download failures, redirect-host
+rejection, idempotency, foreign-file refusal, `--force`, the interactive
+prompt, symlink handling, uninstall (known/foreign), `--dry-run`, spaced
+paths, PATH hints, cleanup, and the no-shell-rc-mutation property.
 
 ## Checksums
 

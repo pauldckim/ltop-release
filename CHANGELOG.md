@@ -2,6 +2,34 @@
 
 All notable public changes to ltop releases are recorded here.
 
+## Installer channel: `install-v1` — 2026-09-07 (published)
+
+**Installer channel, not a product version.** The product releases are the
+`vX.Y.Z` tags above; this entry records the one-line installer pinned at
+the tag [`install-v1`](https://github.com/pauldckim/ltop-release/tree/install-v1).
+No product artifact changed: the installer downloads and verifies the
+existing published releases (macOS v0.1.1, Linux v0.1.0).
+
+- **`install.sh` (repository root):** POSIX sh one-line installer for
+  macOS (arm64/x86_64, Rosetta-aware) and Linux (x86_64). HTTPS-only
+  downloads (TLS ≥ 1.2, `curl` preferred / `wget` fallback, redirect host
+  restricted to the release hosts), four embedded SHA-256 checks before
+  anything is installed (archive, `SHA256SUMS` file, the archive line in
+  that file, extracted binary), atomic install (temp file + `chmod 0755` +
+  `mv`) to `$HOME/.local/bin` by default. No sudo, no shell rc changes, no
+  services. Options: `--prefix`, `--force`, `--uninstall`, `--dry-run`,
+  `--quiet`, `--help`. Idempotent on the expected binary; refuses foreign
+  or older files non-interactively unless `--force` (interactive prompt
+  otherwise); `--uninstall` removes only known ltop hashes.
+- **`scripts/tests/test-install.sh`:** deterministic loopback-fixture test
+  suite for the installer (mapping, hash pipeline, download failures,
+  redirect rejection, consent paths, symlinks, uninstall, dry-run, spaces,
+  PATH hint, cleanup, no rc mutation, piped-script safety).
+- **Docs:** README/INSTALL/VERIFY/DISTRIBUTION updated; the review-first
+  alternative to `curl | sh` (fetch, hash-verify, run) is documented in
+  [docs/VERIFY.md](docs/VERIFY.md). Windows installation is unchanged
+  (PowerShell steps in [docs/INSTALL.md](docs/INSTALL.md)).
+
 ## 0.1.1 — 2026-09-06 (published)
 
 **Adds Apple Silicon (arm64) support for all M1–M5 Macs** and rebuilds

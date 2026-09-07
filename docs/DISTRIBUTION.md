@@ -126,14 +126,17 @@ never touch the real release data):
 ```sh
 sh scripts/tests/test-release-check.sh
 sh scripts/tests/test-cask-update.sh
+sh scripts/tests/test-install.sh
 ```
 
 | Script | Purpose |
 |---|---|
+| `install.sh` (repo root) | one-line installer, tag-pinned at `install-v1` (§5.1) |
 | `scripts/verify-release.sh` / `verify-release.ps1` | verify a `SHA256SUMS` file against local archives (macOS/Linux, Windows) |
 | `scripts/package-release.sh` | package prebuilt binaries into deterministic release archives |
 | `scripts/release-check.sh` | pre-publish gate: checksums, archive shape, cask mirror, SBOM, changelog, forbidden-content scan, tag state |
 | `scripts/cask-update.sh` | generate the tap cask and the template mirror from one source (version, per-arch SHA-256, signing status) |
+| `scripts/tests/test-install.sh` | deterministic loopback-fixture tests for `install.sh` |
 
 `release-check.sh` (exit 0 = all executed checks PASS, 1 = any FAIL,
 2 = usage error):
@@ -290,6 +293,49 @@ storage and is referenced only by name in release notes.
   signing status), so the mirror cannot drift and no stale signing note
   can remain in the template header (§3.1).
 
+### One-line installer (tag `install-v1`)
+
+`install.sh` (repository root) is the curl|sh channel for macOS
+(arm64/x86_64) and Linux (x86_64). It is published on its own **installer
+channel tag** `install-v1` — deliberately *not* a product `vX.Y.Z` tag:
+
+- **Why a separate tag:** the product tags (`v0.1.0`, `v0.1.1`) are the
+  immutable release tags (I1) and predate the installer; the installer
+  pins the *current* artifact per platform (macOS → v0.1.1, Linux →
+  v0.1.0) and must be updatable when a new platform version becomes
+  current without touching any product tag or release asset.
+- **Immutability:** once `install-v1` is pushed it is never moved or
+  mutated. A changed installer ships as a new channel tag (`install-v2`,
+  …) and the README/INSTALL one-liner is repointed in a follow-up commit;
+  the old tag keeps working for users who already copied it.
+- **Security properties** (implemented and tested by
+  `scripts/tests/test-install.sh`): HTTPS-only downloads (TLS ≥ 1.2;
+  `curl` preferred, `wget` fallback) with the final URL restricted to the
+  release hosts; four embedded SHA-256 checks (archive, `SHA256SUMS`
+  file, the archive line inside it, extracted binary) before anything is
+  installed; atomic install (temp file + `chmod 0755` + `mv`); no sudo,
+  no shell rc changes, no services; idempotent on the expected binary;
+  foreign/older files refused non-interactively unless `--force`
+  (interactive prompt otherwise); symlinks never followed or overwritten
+  without consent; `--uninstall` removes only known ltop hashes; unsafe
+  prefixes rejected; macOS quarantine attribute inspected but never
+  removed.
+- **Test-only environment hooks** (`LTOP_RELEASE_BASE_URL`,
+  `LTOP_INSTALL_PLATFORM`, `LTOP_INSTALL_INTERACTIVE`,
+  `LTOP_INSTALL_TEST_MANIFEST`) exist solely for the fixture test suite;
+  they are documented in the script header and never weaken the
+  production defaults (the hash pipeline runs identically in all modes,
+  and a piped script is never interactive).
+- **Updating the mapping:** when a new product release becomes current
+  for a platform, the mapping table in `install.sh` (version, archive
+  name, archive/binary/`SHA256SUMS` hashes) is updated in the private
+  source workflow, `scripts/tests/test-install.sh` is re-run, and a new
+  channel tag is created. The embedded hashes come from the published
+  `releases/v<V>/SHA256SUMS` and `docs/VERIFY.md` records.
+- **Windows:** not covered by the installer (PowerShell steps remain in
+  [INSTALL.md](INSTALL.md)); the installer exits with a clear
+  unsupported-platform error there.
+
 ### WinGet
 
 - The official WinGet schema **supports portable ZIP packages**:
@@ -320,10 +366,11 @@ storage and is referenced only by name in release notes.
 ### Linux
 
 Direct archive + checksums (this repository / GitHub Releases) is the
-channel. The own-tap cask is macOS-only (arm64 + x86_64 since 0.1.1;
-0.1.0 was x86_64 only via `depends_on arch: :x86_64`), so Linuxbrew
-users keep using the archive route (the published 0.1.0 artifact);
-distro repositories are out of scope.
+channel, with the one-line installer (§5.1) as the convenience route.
+The own-tap cask is macOS-only (arm64 + x86_64 since 0.1.1; 0.1.0 was
+x86_64 only via `depends_on arch: :x86_64`), so Linuxbrew users keep
+using the archive route (the published 0.1.0 artifact); distro
+repositories are out of scope.
 
 ## 6. What is (not) in a release
 
