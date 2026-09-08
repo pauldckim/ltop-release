@@ -12,10 +12,11 @@
 # Generated from the 0.1.0 singleton template
 # (pauldckim.ltop.0.1.0.yaml.template, docs/009 §2) with:
 #   PackageVersion: 0.1.2
-#   InstallerUrl:   the scheduled v0.1.2 GitHub Release asset URL
+#   InstallerUrl:   the v0.1.2 GitHub Release asset URL (the release was
+#                   published 2026-09-08; the URL resolves)
 #   InstallerSha256: 283cab4b15969a44ca15fabee2faa028ae42d83b1dae27343d63704c29e1f86c
-#                   (the staged ltop-v0.1.2-windows-x86_64.zip, pinned in
-#                   releases/v0.1.2/SHA256SUMS)
+#                   (the published ltop-v0.1.2-windows-x86_64.zip, pinned
+#                   in releases/v0.1.2/SHA256SUMS)
 #
 # The 0.1.2 Windows binary is NOT Authenticode-signed (unsigned status,
 # docs/VERIFY.md); an unsigned portable exe may be flagged by

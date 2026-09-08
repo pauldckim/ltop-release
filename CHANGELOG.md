@@ -42,13 +42,15 @@ changed:
   (macOS v0.1.1, Linux v0.1.0) is **superseded but remains published
   and immutable** (never moved), as is `install-v1`.
 
-## 0.1.2 — 2026-09-08 (staged; publication pending)
+## 0.1.2 — 2026-09-08 (published)
 
-**Status: staged — not yet published.** The four-platform archives below
-are built, gated, packaged and checksum-pinned
-([`releases/v0.1.2/SHA256SUMS`](releases/v0.1.2/SHA256SUMS)); the `v0.1.2`
-tag and GitHub Release are created at publication. Until then the current
-published releases remain 0.1.1 (macOS) and 0.1.0 (Windows/Linux).
+**Status: published.** The `v0.1.2` tag (commit `db9d1d2`) and the
+[GitHub Release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.2)
+were created on 2026-09-08; the four archives below and
+[`releases/v0.1.2/SHA256SUMS`](releases/v0.1.2/SHA256SUMS) are release
+assets and are never modified in place (GitHub's reported asset digests
+match the tracked manifest). 0.1.2 is the current release for **all four
+platforms**, superseding 0.1.1 (macOS) and 0.1.0 (Windows/Linux).
 
 0.1.2 is the first release that ships **all four platforms**: macOS arm64,
 macOS x86_64, Windows x86_64 and Linux x86_64. It adds API key

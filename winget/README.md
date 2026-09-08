@@ -30,10 +30,11 @@ The 0.1.2 set uses the same official **portable-ZIP route**:
 - `NestedInstallerFiles` — `RelativeFilePath`
   (`ltop-v0.1.2-windows-x86_64/ltop.exe`, relative to the zip root) plus
   `PortableCommandAlias: ltop`;
-- `InstallerSha256` — the SHA-256 of the **staged**
+- `InstallerSha256` — the SHA-256 of the **published**
   `ltop-v0.1.2-windows-x86_64.zip` (pinned in
-  `releases/v0.1.2/SHA256SUMS`); `InstallerUrl` is the scheduled v0.1.2
-  GitHub Release asset URL (it resolves once the release is published).
+  `releases/v0.1.2/SHA256SUMS`; GitHub's reported asset digest matches);
+  `InstallerUrl` is the v0.1.2 GitHub Release asset URL (the release was
+  published 2026-09-08; the URL resolves).
 - No `Scope` on the installer entry: winget reports "Scope is not
   supported for InstallerType portable", so the field is omitted
   (warning-free validation).
@@ -42,7 +43,7 @@ This route is fully supported by the official schema — it is used by
 existing winget-pkgs packages (for example `Docker.DockerCLI`, which ships
 multiple `NestedInstallerFiles` with aliases). The 0.1.2 set was
 generated from the 0.1.0 singleton template with the version, the
-scheduled asset URL and the staged archive hash substituted, and
+v0.1.2 asset URL and the published archive hash substituted, and
 `winget validate` passed on it (Windows host, winget v1.29.290,
 2026-09-08: "Manifest validation succeeded", no warnings).
 
@@ -54,22 +55,24 @@ winget tooling and the `microsoft/winget-pkgs` validation pipeline only
 accept `.yaml` manifests under `manifests/`, so the templates can never be
 accidentally submitted.
 
-## Why the 0.1.2 set is not submittable today
+## Why the 0.1.2 set is not submitted (template state, 2026-09-08)
 
-None of the blockers below is a schema limitation — the schema accepts an
-unsigned zip/portable manifest. They are practical/review blockers:
+The set is kept as **disabled templates and no external PR has been
+submitted** (the submission is user-gated). None of the blockers below
+is a schema limitation — the schema accepts an unsigned zip/portable
+manifest. They are practical/review blockers:
 
-1. **The v0.1.2 GitHub Release does not exist yet.** The `InstallerUrl`
-   (the scheduled v0.1.2 asset URL) would 404 until the release is
-   published. WinGet URL policy requires the `InstallerUrl` to come
-   directly from the **publisher's release location** (third-party
-   redirectors and vanity URLs are rejected as
-   `Validation-Indirect-URL` / `Validation-Domain`). A GitHub Releases
-   download URL under the publisher's own repository is the publisher's
-   release location and is the standard route in winget-pkgs; GitHub's
-   internal 302 from `releases/download/…` to its own asset CDN
-   (`release-assets.githubusercontent.com`) is GitHub's delivery of the
-   publisher's asset, not a third-party redirector.
+1. **The external PR has not been made.** The v0.1.2 GitHub Release now
+   exists (published 2026-09-08), so the `InstallerUrl` (the v0.1.2
+   asset URL) resolves — that blocker is cleared. WinGet URL policy
+   requires the `InstallerUrl` to come directly from the
+   **publisher's release location** (third-party redirectors and vanity
+   URLs are rejected as `Validation-Indirect-URL` / `Validation-Domain`);
+   a GitHub Releases download URL under the publisher's own repository
+   is the publisher's release location and is the standard route in
+   winget-pkgs; GitHub's internal 302 from `releases/download/…` to its
+   own asset CDN (`release-assets.githubusercontent.com`) is GitHub's
+   delivery of the publisher's asset, not a third-party redirector.
 2. **The 0.1.2 Windows binary is not Authenticode-signed** (same status
    as 0.1.0). An unsigned portable exe may be flagged by
    antivirus/SmartScreen during winget-pkgs review. A self-signed
@@ -77,9 +80,9 @@ unsigned zip/portable manifest. They are practical/review blockers:
    trust requires a CA-issued code-signing certificate (or Azure Artifact
    Signing / Store distribution). See
    [../docs/DISTRIBUTION.md](../docs/DISTRIBUTION.md) §4.
-3. **Hash re-verification.** The template carries the staged archive
-   hash; re-verify it against the published release asset before
-   submission.
+3. **Hash re-verification.** The template carries the published archive
+   hash (GitHub's reported asset digest matches it); re-verify it
+   against the release asset before submission.
 
 (The 0.1.0 singleton template remains the record for the published 0.1.0
 Windows artifact; its blockers were the same with the 0.1.0 URL/hash.)
@@ -94,9 +97,10 @@ microsoft/winget-pkgs clone
     pauldckim.ltop.installer.yaml        # promoted from the installer template
 ```
 
-- `winget validate --manifest <dir>` (schema check; passed on the staged
+- `winget validate --manifest <dir>` (schema check; passed on the 0.1.2
   set, 2026-09-08)
-- pull request at <https://github.com/microsoft/winget-pkgs>
+- pull request at <https://github.com/microsoft/winget-pkgs> — **not
+  submitted as of 2026-09-08** (user-gated; the package is unsigned)
 - publisher: `pauldckim` · package identifier: `pauldckim.ltop`
 
 Microsoft may refuse submissions at its discretion; the manifest metadata

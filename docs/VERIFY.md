@@ -2,14 +2,15 @@
 
 ## Current status (read this first)
 
-**v0.1.2 is staged (2026-09-08), publication pending.** v0.1.2 is the
-first release shipping **all four platforms** (macOS arm64, macOS
-x86_64, Windows x86_64, Linux x86_64): API key authentication
-(`--api-key-file` / `LTOP_API_KEY`) and the Linux process-discovery fix.
-The staged archives are pinned below and in
-`releases/v0.1.2/SHA256SUMS`; the `v0.1.2` tag and GitHub Release are
-created at publication, and the archives are attached to the release
-then. Until publication the current published releases remain v0.1.1
+**v0.1.2 was published on 2026-09-08.** v0.1.2 is the first release
+shipping **all four platforms** (macOS arm64, macOS x86_64, Windows
+x86_64, Linux x86_64): API key authentication (`--api-key-file` /
+`LTOP_API_KEY`) and the Linux process-discovery fix. The `v0.1.2` tag
+(points at commit `db9d1d2`) and the
+[v0.1.2 GitHub Release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.2)
+were created on 2026-09-08; the four archives and `SHA256SUMS` are
+release assets pinned below and in `releases/v0.1.2/SHA256SUMS`. v0.1.2
+is the current release for all four platforms, superseding v0.1.1
 (macOS) and v0.1.0 (Windows/Linux).
 
 **v0.1.1 was published on 2026-09-06.** v0.1.1 adds macOS arm64
@@ -117,7 +118,7 @@ allowed), HTTPS-downgrade rejection, and the test-only platform override
 
 Verify the archive you downloaded **before** running it.
 
-### v0.1.2 (staged 2026-09-08; publication pending — all four platforms)
+### v0.1.2 (published 2026-09-08 — all four platforms)
 
 | Artifact | SHA-256 |
 |---|---|
@@ -340,9 +341,9 @@ signing work.
 
 ## What is verified today
 
-**v0.1.2 (staged 2026-09-08, publication pending):**
+**v0.1.2 (published 2026-09-08):**
 
-- SHA-256 checksums of all four staged archives (this file +
+- SHA-256 checksums of all four published archives (this file +
   `releases/v0.1.2/SHA256SUMS`), and of the binaries inside them
   (verified after transfer, before packaging, and after extraction from
   all four archives).
@@ -362,27 +363,34 @@ signing work.
   regenerated for 0.1.2 at
   [`../sbom/ltop-v0.1.2.cdx.json`](../sbom/ltop-v0.1.2.cdx.json)
   (299 components, identical set).
-- Homebrew cask (staged): `Casks/ltop.rb` in the tap and the
+- Homebrew cask (published): `Casks/ltop.rb` in the tap and the
   `homebrew/Casks/ltop.rb.template` mirror are generated for 0.1.2 with
   per-architecture URL/checksum selection; `ruby -c`, stub-DSL
   evaluation for both simulated architectures, `brew style --cask`,
   `brew audit --cask` and `brew info --cask` (Homebrew 6.0.22) all pass.
-  The cask is committed/pushed to the tap **after** the v0.1.2 GitHub
-  Release exists (the cask URL must resolve).
-- WinGet (staged): the 0.1.2 three-file manifest set
-  (`winget/manifests/p/pauldckim/ltop/0.1.2/`) was generated from the
-  0.1.0 template with the scheduled v0.1.2 asset URL and the staged
-  archive hash; `winget validate` passed on a Windows host (winget
-  v1.29.290, 2026-09-08: "Manifest validation succeeded", no warnings).
-  No external PR is submitted before publication.
- - Installer (staged as the `install-v3` channel): the updated
-   `install.sh` (v0.1.2 mapping for all three platforms, v0.1.2
-   known-binary/uninstall hashes) passes its deterministic test suite on
-   a macOS host (144 tests, 0 failed, 2 skipped — wget absent) and a
-   Linux host (149 tests, 0 failed, 0 skipped); loopback fixtures only.
+  The cask was committed/pushed to the tap at commit `a1c953f`
+  (2026-09-08) after the v0.1.2 GitHub Release existed, so the cask URL
+  resolves; the per-architecture checksums match the published release
+  assets.
+- WinGet (template, no external PR submitted): the 0.1.2 three-file
+  manifest set (`winget/manifests/p/pauldckim/ltop/0.1.2/`) was
+  generated from the 0.1.0 template with the v0.1.2 asset URL and the
+  published archive hash; `winget validate` passed on a Windows host
+  (winget v1.29.290, 2026-09-08: "Manifest validation succeeded", no
+  warnings). The v0.1.2 GitHub Release now exists (the `InstallerUrl`
+  resolves), but the 0.1.2 Windows binary is unsigned and the
+  submission is user-gated — the set remains disabled templates and no
+  external PR has been submitted.
+- Installer (published as the `install-v3` channel): the updated
+  `install.sh` (v0.1.2 mapping for all three platforms, v0.1.2
+  known-binary/uninstall hashes) passes its deterministic test suite on
+  a macOS host (144 tests, 0 failed, 2 skipped — wget absent) and a
+  Linux host (149 tests, 0 failed, 0 skipped); loopback fixtures only.
+  The `install-v3` tag was created at commit `db9d1d2` on 2026-09-08
+  (publication record above, "Installer (tag `install-v3`)").
 - M4 arm64 native run: the shipped arm64 binary was executed on the
   Apple M4 Max certification host (macOS 26.6.2, arm64) — identity hash
-  match with the staged record (`a8f8ab16…`), `file` → Mach-O arm64,
+  match with the published record (`a8f8ab16…`), `file` → Mach-O arm64,
   minos 11.0.0, exactly the 5 system dylibs/frameworks, ad-hoc
   signature, `ltop --version` → `ltop 0.1.2`, native PTY `q` smoke, and
   10/10 loopback mock endpoint checks (see "Certification (0.1.2)"
@@ -455,10 +463,11 @@ signing work.
   captures; see the capture procedure and validation table below.
 
 **Published verification:** the archives and `SHA256SUMS` are assets of the
-`v0.1.0` and `v0.1.1` GitHub Releases. For both releases GitHub's reported
-asset digests match the tracked manifests
-(`releases/v0.1.0/SHA256SUMS`, `releases/v0.1.1/SHA256SUMS`), and
-independently downloaded assets passed `SHA256SUMS` in full.
+`v0.1.0`, `v0.1.1` and `v0.1.2` GitHub Releases. For all three releases
+GitHub's reported asset digests match the tracked manifests
+(`releases/v0.1.0/SHA256SUMS`, `releases/v0.1.1/SHA256SUMS`,
+`releases/v0.1.2/SHA256SUMS`), and independently downloaded assets
+passed `SHA256SUMS` in full.
 Published assets are never modified in place; changes require a new release.
 
 ## Certification (0.1.2, sanitized summary)
@@ -498,7 +507,7 @@ all PASS with zero warnings):**
 **M4 arm64 native verification (Apple M4 Max, macOS 26.6.2 arm64):**
 
 - Shipped arm64 binary identity: the transferred binary's hash matched
-  the staged record (`a8f8ab16…`), `file` → Mach-O arm64, minos 11.0.0,
+  the published record (`a8f8ab16…`), `file` → Mach-O arm64, minos 11.0.0,
   exactly the 5 system dylibs/frameworks, `codesign -dv` →
   `Signature=adhoc`, `ltop --version` → `ltop 0.1.2` (exit 0).
 - Native PTY `q` smoke: PASS (clean exit, terminal restored).

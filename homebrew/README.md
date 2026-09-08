@@ -1,15 +1,15 @@
 # Homebrew channel (own tap — chosen route, live)
 
 The **own tap** is the chosen Homebrew distribution route for ltop, and
-it is live (tap repository published, cask at v0.1.1):
+it is live (tap repository published, cask at v0.1.2):
 
 | Item | Value |
 |---|---|
 | Tap name | `pauldckim/tap` |
-| Tap repository | [`pauldckim/homebrew-tap`](https://github.com/pauldckim/homebrew-tap) (published; `Casks/ltop.rb` at v0.1.1) |
+| Tap repository | [`pauldckim/homebrew-tap`](https://github.com/pauldckim/homebrew-tap) (published; `Casks/ltop.rb` at v0.1.2 — tap commit `a1c953f`, 2026-09-08, pushed after the v0.1.2 GitHub Release existed so the cask URL resolves) |
 | Live cask | `Casks/ltop.rb` in the tap repository |
 | Install (one line) | `brew install --cask pauldckim/tap/ltop` |
-| Platform | macOS arm64 + x86_64 (v0.1.1 ships both; the cask is architecture-aware via `arch arm: "arm64", intel: "x86_64"` and per-architecture `sha256 arm: …, intel: …`; the 0.1.0 `depends_on arch: :x86_64` requirement is removed) |
+| Platform | macOS arm64 + x86_64 (v0.1.2 ships both; the cask is architecture-aware via `arch arm: "arm64", intel: "x86_64"` and per-architecture `sha256 arm: …, intel: …`; the 0.1.0 `depends_on arch: :x86_64` requirement is removed) |
 | Source of the binary | the official GitHub release in **this** repository (`pauldckim/ltop-release`), pinned by per-architecture SHA-256 |
 
 ## How the one-line install works (Homebrew ≥ 6)
@@ -32,9 +32,9 @@ it is live (tap repository published, cask at v0.1.1):
    install scripts — nothing is copied out of the tap and executed
    locally.
 
-## Ad-hoc signing limitation (0.1.1)
+## Ad-hoc signing limitation (0.1.2)
 
-The v0.1.1 macOS binaries are **ad-hoc signed** — the arm64 binary must
+The v0.1.2 macOS binaries are **ad-hoc signed** — the arm64 binary must
 carry at least an ad-hoc signature to launch on Apple Silicon (kernel
 requirement), and the x86_64 binary is ad-hoc signed for consistency —
 but they are **not** Developer-ID signed or notarized. Ad-hoc signing is

@@ -29,12 +29,12 @@ Installers:
     # GitHub Releases asset URL under the publisher's own repository — the
     # publisher's release location per WinGet URL policy (GitHub's internal
     # 302 to its asset CDN is expected, not a third-party redirector). The
-    # archive is the scheduled v0.1.2 GitHub Release asset (the URL
-    # resolves once the release is published).
+    # archive is the v0.1.2 GitHub Release asset (the release was
+    # published 2026-09-08; the URL resolves).
     InstallerUrl: https://github.com/pauldckim/ltop-release/releases/download/v0.1.2/ltop-v0.1.2-windows-x86_64.zip
-    # SHA-256 of the staged ltop-v0.1.2-windows-x86_64.zip (pinned in
-    # releases/v0.1.2/SHA256SUMS); re-verify against the published asset
-    # before submission.
+    # SHA-256 of the published ltop-v0.1.2-windows-x86_64.zip (pinned in
+    # releases/v0.1.2/SHA256SUMS; GitHub's reported asset digest matches);
+    # re-verify against the release asset before submission.
     InstallerSha256: 283cab4b15969a44ca15fabee2faa028ae42d83b1dae27343d63704c29e1f86c
     # No `Scope`: winget reports "Scope is not supported for InstallerType
     # portable" — a portable zip registers neither a user nor a machine

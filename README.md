@@ -11,25 +11,22 @@ Grafana required.
 - **License:** proprietary freeware (see [LICENSE.md](LICENSE.md)). The
   **source code is not distributed** and is not available from the
   distributor.
-- **Next release (staged 2026-09-08, publication pending):**
-  **v0.1.2** — the first release shipping **all four platforms** (macOS
-  arm64, macOS x86_64, Windows x86_64, Linux x86_64): API key
-  authentication (`--api-key-file` / `LTOP_API_KEY`) and the Linux
-  process-discovery fix (thread entries excluded). The staged archives
-  are checksum-pinned in
-  [`releases/v0.1.2/SHA256SUMS`](releases/v0.1.2/SHA256SUMS); the
-  `v0.1.2` tag and GitHub Release are created at publication (see
-  [CHANGELOG.md](CHANGELOG.md) for the full staged entry).
 - **Current release:**
+  [v0.1.2](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.2)
+  (published 2026-09-08) — the first release shipping **all four
+  platforms** (macOS arm64, macOS x86_64, Windows x86_64, Linux x86_64):
+  API key authentication (`--api-key-file` / `LTOP_API_KEY`) and the
+  Linux process-discovery fix (thread entries excluded); release assets
+  are pinned in [`releases/v0.1.2/SHA256SUMS`](releases/v0.1.2/SHA256SUMS);
+  see [docs/VERIFY.md](docs/VERIFY.md) for verification instructions.
+- **Previous releases:**
   [v0.1.1](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.1)
-  (published 2026-09-06) — adds macOS arm64 (Apple Silicon) and rebuilds
-  macOS x86_64 at the new version; release assets are pinned in
-  [`releases/v0.1.1/SHA256SUMS`](releases/v0.1.1/SHA256SUMS); see
-  [docs/VERIFY.md](docs/VERIFY.md) for verification instructions.
-- **Published releases:** [v0.1.0](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0)
-  (published 2026-09-06) remains the current release for **Windows x86_64
-  and Linux x86_64** (0.1.1 is macOS-only); its assets are pinned in
-  [`releases/v0.1.0/SHA256SUMS`](releases/v0.1.0/SHA256SUMS).
+  (published 2026-09-06, macOS-only — adds macOS arm64 (Apple Silicon)
+  and rebuilds macOS x86_64 at the new version; assets pinned in
+  [`releases/v0.1.1/SHA256SUMS`](releases/v0.1.1/SHA256SUMS)) and
+  [v0.1.0](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0)
+  (published 2026-09-06; assets pinned in
+  [`releases/v0.1.0/SHA256SUMS`](releases/v0.1.0/SHA256SUMS)).
 
 ## Screenshots
 
@@ -77,17 +74,15 @@ these captures remain representative. See
 
 | Platform | Current artifact | Version | Signing status |
 |---|---|---|---|
-| macOS arm64 (Apple Silicon) | `ltop-v0.1.1-macos-arm64.zip` | 0.1.1 | **ad-hoc signed** — no Developer ID / notarization yet (see [docs/VERIFY.md](docs/VERIFY.md)) |
-| macOS x86_64 (Intel) | `ltop-v0.1.1-macos-x86_64.zip` | 0.1.1 | **ad-hoc signed** — no Developer ID / notarization yet (see [docs/VERIFY.md](docs/VERIFY.md)) |
-| Windows x86_64 | `ltop-v0.1.0-windows-x86_64.zip` | 0.1.0 | **unsigned** — no Authenticode yet (see [docs/VERIFY.md](docs/VERIFY.md)) |
-| Linux x86_64 | `ltop-v0.1.0-linux-x86_64.tar.gz` | 0.1.0 | n/a (checksums only) — glibc dynamic build |
+| macOS arm64 (Apple Silicon) | `ltop-v0.1.2-macos-arm64.zip` | 0.1.2 | **ad-hoc signed** — no Developer ID / notarization yet (see [docs/VERIFY.md](docs/VERIFY.md)) |
+| macOS x86_64 (Intel) | `ltop-v0.1.2-macos-x86_64.zip` | 0.1.2 | **ad-hoc signed** — no Developer ID / notarization yet (see [docs/VERIFY.md](docs/VERIFY.md)) |
+| Windows x86_64 | `ltop-v0.1.2-windows-x86_64.zip` | 0.1.2 | **unsigned** — no Authenticode yet (see [docs/VERIFY.md](docs/VERIFY.md)) |
+| Linux x86_64 | `ltop-v0.1.2-linux-x86_64.tar.gz` | 0.1.2 | n/a (checksums only) — glibc dynamic build |
 
-**0.1.1 is macOS-only**: it adds macOS arm64 (one generic
-`aarch64-apple-darwin` target covering all M1–M5 Macs, deployment target
-macOS 11.0/Big Sur) and rebuilds the macOS x86_64 artifact at the new
-version. The published **0.1.0 Windows and Linux artifacts remain the
-current release for those platforms** and are unchanged. Windows arm64
-and Linux aarch64 are **not** included.
+**0.1.2 is the first release shipping all four platforms**: it adds API
+key authentication (`--api-key-file` / `LTOP_API_KEY`) and the Linux
+process-discovery fix (thread entries excluded). Windows arm64 and Linux
+aarch64 are **not** included.
 
 The macOS and Windows binaries are plain CLI executables; no native
 installer (MSI/PKG/DMG/RPM) is shipped — a single binary plus a checksum is
@@ -155,8 +150,8 @@ The fully-qualified command auto-taps `pauldckim/tap` (repository
 [`pauldckim/homebrew-tap`](https://github.com/pauldckim/homebrew-tap))
 and, under Homebrew ≥ 6, trusts **only this cask** — no separate
 `brew tap` or `brew trust` steps. The cask selects the archive for your
-machine (macOS arm64 or x86_64, 0.1.1), downloads it from the official
-release, and verifies its SHA-256. The 0.1.1 binaries are ad-hoc signed
+machine (macOS arm64 or x86_64, 0.1.2), downloads it from the official
+release, and verifies its SHA-256. The 0.1.2 binaries are ad-hoc signed
 but **not** Developer-ID signed or notarized, so the first run of a
 quarantined download is blocked by Gatekeeper; `brew install` prints the
 exact unblock procedure as cask caveats (verify checksum → remove the
@@ -165,37 +160,37 @@ quarantine recursively, or System Settings → Privacy & Security →
 [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) §5.
 
 **Manual install (all platforms):** download the archive for your
-platform — macOS from the v0.1.1 release, Windows/Linux from the
-[v0.1.0 release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0)
+platform from the
+[v0.1.2 release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.2)
 — verify the SHA-256 checksum ([docs/VERIFY.md](docs/VERIFY.md)), extract,
 and put the binary on your `PATH`:
 
 ```sh
 # macOS (Apple Silicon)
-unzip ltop-v0.1.1-macos-arm64.zip
-install -m 0755 ltop-v0.1.1-macos-arm64/ltop /usr/local/bin/ltop
+unzip ltop-v0.1.2-macos-arm64.zip
+install -m 0755 ltop-v0.1.2-macos-arm64/ltop /usr/local/bin/ltop
 
 # macOS (Intel)
-unzip ltop-v0.1.1-macos-x86_64.zip
-install -m 0755 ltop-v0.1.1-macos-x86_64/ltop /usr/local/bin/ltop
+unzip ltop-v0.1.2-macos-x86_64.zip
+install -m 0755 ltop-v0.1.2-macos-x86_64/ltop /usr/local/bin/ltop
 
-# Linux (0.1.0 — current Linux release)
-tar xzf ltop-v0.1.0-linux-x86_64.tar.gz
-install -m 0755 ltop-v0.1.0-linux-x86_64/ltop /usr/local/bin/ltop
+# Linux
+tar xzf ltop-v0.1.2-linux-x86_64.tar.gz
+install -m 0755 ltop-v0.1.2-linux-x86_64/ltop /usr/local/bin/ltop
 
-# Windows (PowerShell, 0.1.0 — current Windows release)
-Expand-Archive .\ltop-v0.1.0-windows-x86_64.zip
+# Windows (PowerShell)
+Expand-Archive .\ltop-v0.1.2-windows-x86_64.zip
 # then add the extracted folder to PATH, or run ltop.exe from it
 ```
 
 Full per-OS instructions: [docs/INSTALL.md](docs/INSTALL.md).
 
-> **Unsigned / ad-hoc-signed binaries.** The 0.1.1 macOS binaries are
+> **Unsigned / ad-hoc-signed binaries.** The 0.1.2 macOS binaries are
 > ad-hoc signed (the arm64 binary requires at least an ad-hoc signature
 > to launch on Apple Silicon; the x86_64 binary is ad-hoc signed for
 > consistency) but are **not** Developer-ID signed or notarized — on macOS,
 > Gatekeeper will still block the first run of a quarantined download. The
-> 0.1.0 Windows binary is unsigned; SmartScreen may show a warning.
+> 0.1.2 Windows binary is unsigned; SmartScreen may show a warning.
 > Verify the SHA-256 checksum first, then follow the platform notes in
 > [docs/VERIFY.md](docs/VERIFY.md). These packages do **not** satisfy
 > *official* Homebrew cask requirements (which need Developer ID +

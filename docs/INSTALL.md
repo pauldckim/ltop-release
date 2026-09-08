@@ -3,20 +3,19 @@
 ltop is a single binary. Installation = verify the archive, extract it, put
 the binary on your `PATH`. No installer, no daemon, no service.
 
-Download from the official release — **macOS from the v0.1.1 release,
-Windows and Linux from the
-[v0.1.0 release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.0)**
-(0.1.1 is macOS-only) — and **verify the checksum before running anything**
+Download from the official release — **all four platforms from the
+[v0.1.2 release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.2)**
+(published 2026-09-08) — and **verify the checksum before running anything**
 ([VERIFY.md](VERIFY.md)).
 
-**v0.1.2 (staged 2026-09-08, publication pending):** the next release ships
-all four platforms (macOS arm64/x86_64, Windows x86_64, Linux x86_64) with
-API key authentication and the Linux process-discovery fix. Its archives
-are staged and checksum-pinned ([VERIFY.md](VERIFY.md),
-[`../releases/v0.1.2/SHA256SUMS`](../releases/v0.1.2/SHA256SUMS)); the
-`v0.1.2` tag and GitHub Release are created at publication, and the
-sections below then point at the v0.1.2 archives. Until then the
-published releases above remain the installable ones.
+**v0.1.2 (published 2026-09-08):** the current release ships all four
+platforms (macOS arm64/x86_64, Windows x86_64, Linux x86_64) with API key
+authentication and the Linux process-discovery fix. Its archives are
+checksum-pinned ([VERIFY.md](VERIFY.md),
+[`../releases/v0.1.2/SHA256SUMS`](../releases/v0.1.2/SHA256SUMS)) and
+attached to the
+[v0.1.2 GitHub Release](https://github.com/pauldckim/ltop-release/releases/tag/v0.1.2);
+the sections below point at the v0.1.2 archives.
 
 ## One-line installer (macOS + Linux)
 
@@ -100,11 +99,11 @@ The fully-qualified command does everything: it auto-taps
 `pauldckim/tap` (repository `pauldckim/homebrew-tap`) if needed and,
 under Homebrew ≥ 6, trusts **only this cask** (cask-scoped entry in
 `~/.homebrew/trust.json`, not the whole tap). The cask selects the
-archive for your machine — `ltop-v0.1.1-macos-arm64.zip` on Apple
-Silicon, `ltop-v0.1.1-macos-x86_64.zip` on Intel — downloads it from the
+archive for your machine — `ltop-v0.1.2-macos-arm64.zip` on Apple
+Silicon, `ltop-v0.1.2-macos-x86_64.zip` on Intel — downloads it from the
 official release and verifies its SHA-256.
 
-**Blocked first run (ad-hoc signed, not Developer-ID signed).** The 0.1.1
+**Blocked first run (ad-hoc signed, not Developer-ID signed).** The 0.1.2
 binaries are ad-hoc signed (the arm64 binary must carry at least an
 ad-hoc signature to launch on Apple Silicon; the x86_64 binary is ad-hoc
 signed for consistency) but are **not** Developer-ID signed or
@@ -131,11 +130,11 @@ Uninstall: `brew uninstall --cask ltop` (plus optional
 ```sh
 # Apple Silicon (arm64)
 # 1. Verify the archive (see VERIFY.md for the expected value)
-shasum -a 256 ltop-v0.1.1-macos-arm64.zip
+shasum -a 256 ltop-v0.1.2-macos-arm64.zip
 
 # 2. Extract and install
-unzip ltop-v0.1.1-macos-arm64.zip
-install -m 0755 ltop-v0.1.1-macos-arm64/ltop /usr/local/bin/ltop
+unzip ltop-v0.1.2-macos-arm64.zip
+install -m 0755 ltop-v0.1.2-macos-arm64/ltop /usr/local/bin/ltop
 
 # 3. Check
 ltop --version
@@ -144,17 +143,17 @@ ltop --version
 ```sh
 # Intel (x86_64)
 # 1. Verify the archive (see VERIFY.md for the expected value)
-shasum -a 256 ltop-v0.1.1-macos-x86_64.zip
+shasum -a 256 ltop-v0.1.2-macos-x86_64.zip
 
 # 2. Extract and install
-unzip ltop-v0.1.1-macos-x86_64.zip
-install -m 0755 ltop-v0.1.1-macos-x86_64/ltop /usr/local/bin/ltop
+unzip ltop-v0.1.2-macos-x86_64.zip
+install -m 0755 ltop-v0.1.2-macos-x86_64/ltop /usr/local/bin/ltop
 
 # 3. Check
 ltop --version
 ```
 
-**Ad-hoc signed binary (0.1.1).** The macOS binaries are ad-hoc signed
+**Ad-hoc signed binary (0.1.2).** The macOS binaries are ad-hoc signed
 but **not** Developer-ID signed or notarized. Depending on how you obtain
 the binary, Gatekeeper may block first launch (e.g. a quarantined
 download shows "cannot be opened because the developer cannot be
@@ -169,28 +168,27 @@ Or right-click → Open once. Do this only after the checksum matches. A
 Developer-ID signed/notarized build is planned; see
 [DISTRIBUTION.md](DISTRIBUTION.md).
 
-## Windows (x86_64) — 0.1.0 (current Windows release)
+## Windows (x86_64) — 0.1.2 (current Windows release)
 
-0.1.1 is macOS-only; the published 0.1.0 Windows artifact remains the
-current Windows release. The staged v0.1.2 archive
-(`ltop-v0.1.2-windows-x86_64.zip`) will be the next Windows release at
-publication (checksum in [VERIFY.md](VERIFY.md)).
+The v0.1.2 Windows artifact (`ltop-v0.1.2-windows-x86_64.zip`) is the
+current Windows release (published 2026-09-08; checksum in
+[VERIFY.md](VERIFY.md)).
 
 ```powershell
 # 1. Verify the archive (see VERIFY.md for the expected value)
-(Get-FileHash .\ltop-v0.1.0-windows-x86_64.zip -Algorithm SHA256).Hash
+(Get-FileHash .\ltop-v0.1.2-windows-x86_64.zip -Algorithm SHA256).Hash
 
 # 2. Extract into the current directory (the archive already contains the
-#    single top-level folder ltop-v0.1.0-windows-x86_64)
-Expand-Archive .\ltop-v0.1.0-windows-x86_64.zip -DestinationPath .
+#    single top-level folder ltop-v0.1.2-windows-x86_64)
+Expand-Archive .\ltop-v0.1.2-windows-x86_64.zip -DestinationPath .
 
 # 3a. Run from the extracted folder
-.\ltop-v0.1.0-windows-x86_64\ltop.exe --version
+.\ltop-v0.1.2-windows-x86_64\ltop.exe --version
 
 # 3b. Or add it to your user PATH (PowerShell)
 $dir = "$env:LOCALAPPDATA\ltop"
 New-Item -ItemType Directory -Force $dir | Out-Null
-Copy-Item .\ltop-v0.1.0-windows-x86_64\ltop.exe $dir
+Copy-Item .\ltop-v0.1.2-windows-x86_64\ltop.exe $dir
 # Read only the USER-scope PATH. Do NOT use $env:Path here: that is the
 # combined machine+user PATH of the current process, and writing it back to
 # the User scope would copy every system entry into your user PATH.
@@ -205,28 +203,27 @@ The PATH change applies to **new shells only** — reopen your terminal (or
 start a new PowerShell) before `ltop` can be run by name. The current
 session's PATH is not updated.
 
-**Unsigned binary (0.1.0).** The Windows binary is not Authenticode-signed;
+**Unsigned binary (0.1.2).** The Windows binary is not Authenticode-signed;
 SmartScreen may show a "Windows protected your PC" prompt for an unknown
 publisher. After verifying the SHA-256 checksum, choose *More info* →
 *Run anyway* for a binary you trust. A signed build is planned; see
 [DISTRIBUTION.md](DISTRIBUTION.md).
 
-## Linux (x86_64) — 0.1.0 (current Linux release)
+## Linux (x86_64) — 0.1.2 (current Linux release)
 
-0.1.1 is macOS-only; the published 0.1.0 Linux artifact remains the
-current Linux release. The staged v0.1.2 archive
-(`ltop-v0.1.2-linux-x86_64.tar.gz`) will be the next Linux release at
-publication (checksum in [VERIFY.md](VERIFY.md)).
+The v0.1.2 Linux artifact (`ltop-v0.1.2-linux-x86_64.tar.gz`) is the
+current Linux release (published 2026-09-08; checksum in
+[VERIFY.md](VERIFY.md)).
 
 ```sh
 # 1. Verify the archive (see VERIFY.md for the expected value)
-sha256sum -c <(echo "<sha256>  ltop-v0.1.0-linux-x86_64.tar.gz")
+sha256sum -c <(echo "<sha256>  ltop-v0.1.2-linux-x86_64.tar.gz")
 # or verify against the release SHA256SUMS file:
 sha256sum -c SHA256SUMS
 
 # 2. Extract and install
-tar xzf ltop-v0.1.0-linux-x86_64.tar.gz
-install -m 0755 ltop-v0.1.0-linux-x86_64/ltop /usr/local/bin/ltop
+tar xzf ltop-v0.1.2-linux-x86_64.tar.gz
+install -m 0755 ltop-v0.1.2-linux-x86_64/ltop /usr/local/bin/ltop
 
 # 3. Check
 ltop --version
