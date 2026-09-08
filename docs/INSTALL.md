@@ -87,6 +87,67 @@ installer prints checksum-first / System Settings → Privacy & Security →
 > SHA-256 of the pinned `install.sh`), then run it. Windows is not covered
 > by the installer (use the PowerShell steps below).
 
+## Upgrading to v0.1.2 (from v0.1.0 / v0.1.1 one-liner installs)
+
+If you installed ltop with an older one-line installer — the `install-v1`
+or `install-v2` channel (v0.1.0 / v0.1.1, etc.) — replace it with the
+current `install-v3` channel (v0.1.2). The default target is
+`$HOME/.local/bin/ltop` (or your `--prefix`); the installer never uses
+sudo and never modifies shell configuration files.
+
+The pipe form `… | sh -s -- <options>` passes the options to the script
+read from standard input: `-s` makes `sh` read the script from stdin and
+`--` ends option parsing, so `--dry-run`, `--force` and `--uninstall`
+reach the installer as arguments. This is POSIX sh; the one-liners below
+carry no line-continuation characters.
+
+**1. Dry-run first (recommended).** It prints the plan and changes
+nothing:
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v3/install.sh | sh -s -- --dry-run
+```
+
+Read the plan, especially the target path and the existing-file line:
+
+- the target already holds the expected v0.1.2 binary → a real run is
+  an **idempotent no-op** (nothing to do, exit 0); `--force` is
+  unnecessary — re-running the plain one-liner from the section above
+  is enough;
+- the target does not exist → a real run would create it;
+- the target holds an older ltop or a foreign file → a real run would
+  stop and need `--force` (or an interactive yes with a terminal
+  attached). The plan names the case: `existing file looks like ltop …`
+  for a known older ltop, `existing file is not a known ltop binary`
+  otherwise.
+
+**2. Confirm the target, then upgrade with `--force`:**
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v3/install.sh | sh -s -- --force
+```
+
+> **`--force` replaces whatever file is at the target** — a known older
+> ltop *or* a foreign file. Confirm the dry-run's target path and
+> existing-file line are the ltop you expect before running this.
+
+To remove ltop instead of upgrading, the uninstall pipe form is
+`… | sh -s -- --uninstall` (full command in the
+[Uninstall](#uninstall) section): it removes the target only when its
+hash matches a known ltop binary and refuses symlinks and foreign files.
+
+**Homebrew installs do not use the installer.** If you installed with
+`brew install --cask pauldckim/tap/ltop`, do not mix the two channels:
+the cask manages a Homebrew symlink (`$(brew --prefix)/bin/ltop`) while
+the installer manages a real file (`$HOME/.local/bin/ltop`); the
+installer's `--uninstall` refuses symlinks, and `brew uninstall --cask
+ltop` leaves the installer's file alone. Upgrade a cask install with
+Homebrew only:
+
+```sh
+brew update && brew upgrade --cask ltop
+```
+
 ## macOS (arm64 and x86_64)
 
 ### Homebrew (recommended, one line)

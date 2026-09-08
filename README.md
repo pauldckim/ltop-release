@@ -140,6 +140,50 @@ binary. Options: `--prefix DIR`, `--force`, `--uninstall`, `--dry-run`,
 > documented in [docs/INSTALL.md](docs/INSTALL.md) and
 > [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) §5.1.
 
+### Upgrading to v0.1.2
+
+If you installed ltop with an older one-line installer (the `install-v1`
+or `install-v2` channel — v0.1.0 / v0.1.1, etc.), replace it with the
+current `install-v3` channel (v0.1.2). The default target is
+`$HOME/.local/bin/ltop`; the installer never uses sudo and never
+modifies shell configuration files.
+
+**1. Dry-run first (recommended):**
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v3/install.sh | sh -s -- --dry-run
+```
+
+The dry-run prints the plan and changes nothing. If the target already
+holds the expected v0.1.2 binary, a real run is an idempotent no-op and
+`--force` is unnecessary. If it holds an older or foreign file, the
+plan says a real run would stop there and need `--force` (or an
+interactive yes), and names whether the existing file is a known older
+ltop or not a known ltop binary.
+
+**2. Confirm the target, then upgrade:**
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/pauldckim/ltop-release/install-v3/install.sh | sh -s -- --force
+```
+
+> **`--force` replaces whatever file is at the target** — a known older
+> ltop *or* a foreign file. Read the dry-run output and confirm the
+> target path before running this. To remove ltop instead of upgrading,
+> the pipe form ends in `sh -s -- --uninstall` (it removes only files
+> whose hash matches a known ltop binary).
+
+**Homebrew installs do not use the installer.** If you installed with
+`brew install --cask pauldckim/tap/ltop`, do not mix the two: upgrade
+with Homebrew only:
+
+```sh
+brew update && brew upgrade --cask ltop
+```
+
+Full details: [docs/INSTALL.md](docs/INSTALL.md) ("Upgrading to
+v0.1.2").
+
 **macOS (both architectures) with Homebrew (one line):**
 
 ```sh
