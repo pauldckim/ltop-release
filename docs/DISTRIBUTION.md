@@ -489,3 +489,54 @@ loopback-only mock llama-server endpoint (`127.0.0.1:8081`; mock model
 name `qwen3-4b-q4_k_m.gguf`) with process metrics from a controlled local
 worker process (real ephemeral PID; capture-host measurements — see
 [VERIFY.md](VERIFY.md) "Screenshot validation").
+
+## 7. Maintainer commit identity (forward-only, added 2026-09-11)
+
+All maintainer commits and tags in this repository — and in the tap
+repository [`pauldckim/homebrew-tap`](https://github.com/pauldckim/homebrew-tap)
+— use the maintainer's verified GitHub identity, `Paul Kim
+<pauldckim@gmail.com>`. The maintainer's **work email is never used for
+public commits or tags**.
+
+**Preflight, before every commit or tag.** Repo-local git config does not
+travel with a clone, so each checkout sets it once and verifies the
+effective identity before committing (helper-free, run from the repo
+root; a FAIL means fix the config first, then re-run — do not commit, and
+do not reword or amend published commits to "fix" an identity):
+
+```sh
+set -eu
+expected_name="Paul Kim"
+expected_email="pauldckim@gmail.com"
+[ "$(git config --local --get user.name || true)" = "$expected_name" ] || {
+  echo "FAIL: repo-local identity is not the verified one — set it first:" >&2
+  echo "  git config --local user.name \"$expected_name\"" >&2
+  echo "  git config --local user.email \"$expected_email\"" >&2
+  exit 1
+}
+[ "$(git config --local --get user.email || true)" = "$expected_email" ] || {
+  echo "FAIL: repo-local identity is not the verified one — set it first:" >&2
+  echo "  git config --local user.name \"$expected_name\"" >&2
+  echo "  git config --local user.email \"$expected_email\"" >&2
+  exit 1
+}
+for var in GIT_AUTHOR_IDENT GIT_COMMITTER_IDENT; do
+  case "$(git var "$var")" in
+    "$expected_name <$expected_email>"*) : ;;
+    *) echo "FAIL: effective git identity is not $expected_name <$expected_email>: $(git var "$var")" >&2; exit 1 ;;
+  esac
+done
+echo "OK: commit identity preflight passed"
+```
+
+**Forward-only history.** Published commits, tags and releases are
+immutable (§1). In particular, for identity reasons as for any other:
+
+- no history rewrite (amend, rebase, filter) of published commits;
+- no force-push to `main` or any branch;
+- no tag recreation or re-pointing (product tags and installer channel
+  tags alike).
+
+Commits and tags that predate this section were made under a legacy
+work-account identity and are preserved as-is; the policy applies to new
+commits and tags only.
